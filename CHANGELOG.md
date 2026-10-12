@@ -1,0 +1,107 @@
+# Změny
+
+## 1.5.0 – 2026-10-12
+
+- AI: **nic se nezahazuje** – použitelné řádky z každé odpovědi (i rozbité nebo uříznuté) se hned ukládají, znovu se
+  posílají jen chybějící řádky; přerušený překlad příště naváže.
+- Dokumentace: doporučení modelů s cenami a dobou překladu (docs/ai-preklad.md).
+
+## 1.4.1 – 2026-10-12
+
+- AI: volba **„Překládat i automaticky“** (výchozí vypnuto) – jinak AI překlad jen ručně v *Hledat titulky*.
+- AI: nastavitelná velikost dávky (výchozí 150 řádků; celý díl najednou = víc souvislostí, méně požadavků).
+
+## 1.4.0 – 2026-10-12
+
+- AI: **měsíční limit útraty** za API (výchozí 2 $) s odhadem podle spotřebovaných tokenů, zobrazení v nastavení.
+- AI: vždy jen jeden překlad najednou; přeložené dávky se ukládají (přerušení neplatí dvakrát); nepoužitelná odpověď
+  → dávka se rozdělí místo zahození celého dílu.
+- OpenAI: výchozí model **gpt-5-mini** (výrazně levnější), `reasoning_effort: low`, `max_completion_tokens`.
+
+## 1.3.3 – 2026-10-12
+
+- Tlačítka *Vyzkoušet přihlášení*, *Prohledat sbírku* a *Vyzkoušet AI překlad* nejdřív uloží nastavení – testuje se, co je na obrazovce.
+- OpenAI: modely GPT-5 / o-série běží s `reasoning_effort: low` – překlad je výrazně rychlejší a levnější.
+
+## 1.3.2 – 2026-10-12
+
+- Heslo k archivům kamui-subs.cz se zadává v nastavení u přihlášení na kamui (výchozí prázdné, heslo najdeš na jejich webu).
+
+## 1.3.1 – 2026-10-12
+
+- Bezpečnost: id výsledku z vlastní sbírky nese jen klíč položky, cesta se bere výhradně ze serverového indexu; kontrola, že soubor leží uvnitř nastavené složky, řeší symbolické odkazy a hranici složky.
+
+## 1.3.0 – 2026-10-12
+
+- **Vlastní sbírka titulků:** v nastavení zadáš složky (např. síťový disk), doplněk v nich hledá podsložky a archivy
+  zip/rar (i s heslem a i sbírky s víc sériemi uvnitř), páruje je s názvem sezóny na AniList a díl bere z názvu souboru
+  (s ohledem na SxxEyy). Titulky projdou stejným srovnáním časování. Volitelně přednost před weby, tlačítko *Prohledat sbírku*.
+
+## 1.2.0 – 2026-10-12
+
+- **Claude přes předplatné bez konzole:** v nastavení doplňku tlačítka *Nainstalovat Claude Code* (oficiální instalátor)
+  a *Přihlásit se ke Claude* (odkaz → kód → token se uloží sám). Funguje i v Dockeru a mimo Proxmox.
+- Překladače: Claude (předplatné nebo API klíč), OpenAI (jen API klíč) – proč, viz docs/ai-preklad.md.
+
+## 1.1.1 – 2026-10-12
+
+- Bezpečnost: id výsledků je podepsané tajným klíčem serveru (HMAC) – přes API nejde podvrhnout jiný odkaz ani spustit překlad.
+- Bezpečnost: text titulků je pro AI jen data. Claude Code běží **bez jakýchkoli nástrojů** (`--tools ""`, bez MCP,
+  bez uživatelských nastavení a hooků, v prázdné složce) – i podstrčené pokyny v titulcích nemůžou nic číst ani spouštět.
+- Překladač ChatGPT (Codex CLI) odebrán: jeho příkazový řádek nejde vypnout, takže by šlo číst soubory na serveru.
+  Pro OpenAI zůstává varianta s API klíčem (bez nástrojů).
+
+## 1.1.0 – 2026-10-12
+
+- **AI překlad** (volitelný): když k dílu nejsou české titulky nikde k nalezení a video má vložené titulky v jiném jazyce
+  (přednostně anglické), doplněk je přeloží do češtiny. Překladače: **Claude přes předplatné claude.ai** (Claude Code CLI),
+  **ChatGPT přes předplatné** (Codex CLI), nebo Claude/OpenAI API. Překládá se po scénách s kontextem (jména, oslovení,
+  tykání/vykání), značky ASS zůstávají. Časování je převzaté z videa. Ukládá se jako `video.cs.ai.default.ass`
+  a skutečný fansub ho později nahradí. Denní limit přeložených dílů, tlačítko *Vyzkoušet AI překlad*.
+
+## 1.0.6 – 2026-10-12
+
+- Bezpečnost: hledání střihů má pevné meze (nejvýš 3000 řádků a 8 kandidátních posunů), aby extrémní soubor nemohl zahltit server.
+
+## 1.0.5 – 2026-10-12
+
+- **Vzor pro časování v jakémkoli jazyce:** když video nemá anglické titulky, použije se jiná vložená stopa (francouzská, německá…)
+  – porovnávají se jen začátky vět, ne text.
+- **Nalezení střihů:** i když jeden posun sedí na většinu dílu, doplněk hledá místa, kde verze videa a titulků
+  stříhají jinak (úvodní scéna, přestávka, upoutávka), a každý úsek posune zvlášť (segmentace Viterbi).
+  Příklad Ao no Exorcist BD: úvodní scéna +9,9 s, zbytek −0,1 s.
+- **Srovnání po částech i podle zvuku** – díl se rozdělí na ~10 částí, posun se změní jen tam, kde se na tom shodnou sousední části.
+- **Vlastní titulky bez označení jazyka** (např. `video.ass`, `video.22edited.srt`) se poznají podle textu – díl se pak přeskočí.
+
+## 1.0.4 – 2026-10-12
+
+- Ohleduplnost k webům: **denní limit požadavků** na každý web (výchozí 500), titulky, které k dílu nesedí, se automaticky
+  znovu nezkouší **14 dní**, seznam dílů z hns.sk se pamatuje 3 dny, tabulky z hiyori 24 h.
+- Nové API `POST /CzAnimeTitulky/Upload/{id}` – nahrání vlastních titulků (ass/srt/zip/rar) k dílu se srovnáním časování.
+- Oprava: odkazy na www.hns.sk (přihlášení platí pro hns.sk).
+- Oprava: stará mezipaměť AniList bránila pokračování řetězce sezón za speciálem.
+
+## 1.0.3 – 2026-10-12
+
+- Nový zdroj: archiv **TeamNS** (teamns.gensubs.cz). hiyori odkazuje jen na úvodní stránku archivu; doplněk najde ZIP sezóny podle názvu z AniList (tolerantní porovnání, čísla sezón a „∬“ se musí shodovat) a vybere z něj díl.
+
+## 1.0.2 – 2026-10-12
+
+- Oprava: hns.sk – číslo dílu se na stránce anime nenašlo (text bez mezer), díly ze stránky anime se nestáhly.
+- Oprava: řetězec sezón na AniList pokračuje i za speciálem/OVA (např. Dr. Stone S2 → Ryuusui → S3).
+
+## 1.0.1 – 2026-10-12
+
+- Bezpečnost: všechna připojení jen na veřejné adresy (i po přesměrování), jen zip/rar archivy, kontrola rozbalené velikosti.
+
+## 1.0.0 – 2026-10-12
+
+První verze.
+
+- Poskytovatel titulků pro Jellyfin 12.1 (díly a filmy), automatický i ruční režim.
+- Zdroje: hiyori.cz, hns.sk, kamui-subs.cz, wosir.cz, přímé odkazy; zip/rar s heslem.
+- Párování přes AniList (řetězec pokračování = sezóny) a AniList odkaz na hiyori.cz.
+- Výběr: CZ před SK, stejný release, BD/TV, konzistentní skupina, verze; v automatickém režimu až 3 náhrady.
+- Srovnání časování podle anglických titulků ve videu (globálně, po částech, jiná snímková frekvence) a podle zvuku.
+- Bezpečnost: stahuje se jen z daných webů, nikdy z místní sítě; limity velikosti stahování a archivů.
+- Uložení jako `video.cs.default.ass`, historie činnosti, test přihlášení.

@@ -1,0 +1,17 @@
+name: "CZ Anime Titulky"
+guid: "0b105cb3-606c-41f3-9a2b-a5c759d4d959"
+version: "1.5.0.0"
+targetAbi: "12.1.0.0"
+framework: "net10.0"
+owner: "kyselyna"
+overview: "České a slovenské fansub titulky k anime se srovnáním časování"
+description: >
+  Hledá české (případně slovenské) fansub titulky k anime přes hiyori.cz a stahuje je
+  z hns.sk, kamui-subs.cz, wosir.cz a z hiyori. Časování automaticky srovná podle anglických
+  titulků ve videu nebo podle zvuku a titulky uloží jako výchozí stopu.
+category: "Subtitles"
+artifacts:
+  - "Jellyfin.Plugin.CzAnimeTitulky.dll"
+  - "AngleSharp.dll"
+changelog: >
+  AI překlad: když fansub nikde není, přeloží vložené (anglické) titulky do češtiny přes Claude (předplatné claude.ai) nebo API; časování z videa, fansub ho později nahradí.

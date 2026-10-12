@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Offline check of the timing algorithms: aligntest <cases.json> <pcm-cache-dir> -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Jellyfin.Plugin.CzAnimeTitulky/Subtitles/SubtitleDocument.cs" />
+    <Compile Include="../../src/Jellyfin.Plugin.CzAnimeTitulky/Sync/ReferenceAligner.cs" />
+    <Compile Include="../../src/Jellyfin.Plugin.CzAnimeTitulky/Sync/AudioAligner.cs" />
+    <Compile Include="../../src/Jellyfin.Plugin.CzAnimeTitulky/Sync/EnergyMeter.cs" />
+  </ItemGroup>
+</Project>

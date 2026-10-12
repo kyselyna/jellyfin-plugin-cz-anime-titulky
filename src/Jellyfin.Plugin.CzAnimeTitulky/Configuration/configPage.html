@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="utf-8">
+    <title>CZ Anime Titulky</title>
+</head>
+<body>
+<div id="CzAnimeTitulkyConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-select,emby-textarea">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="CzAnimeTitulkyConfigForm">
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">CZ Anime Titulky</h2>
+                    <p>České (případně slovenské) fansub titulky k anime z <b>hiyori.cz</b>, <b>hns.sk</b>, <b>kamui-subs.cz</b> a <b>wosir.cz</b>
+                        s automatickým srovnáním časování. Po uložení zapni v knihovně anime
+                        <i>Stahování titulků → Čeština</i> a dej „CZ Anime Titulky“ na první místo v pořadí stahovačů.</p>
+                </div>
+
+                <div class="verticalSection">
+                    <h3 class="sectionTitle">Přihlášení k webům</h3>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="HiyoriUsername" label="hiyori.cz – uživatel"></div>
+                    <div class="inputContainer"><input is="emby-input" type="password" id="HiyoriPassword" label="hiyori.cz – heslo"></div>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="HnsEmail" label="hns.sk – e-mail"></div>
+                    <div class="inputContainer"><input is="emby-input" type="password" id="HnsPassword" label="hns.sk – heslo"></div>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="KamuiUsername" label="kamui-subs.cz – uživatel"></div>
+                    <div class="inputContainer"><input is="emby-input" type="password" id="KamuiPassword" label="kamui-subs.cz – heslo"></div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="ArchivePassword" label="kamui-subs.cz – heslo k archivům">
+                        <div class="fieldDescription">kamui-subs.cz dává titulky do archivů chráněných heslem. Heslo najdeš na jejich webu.</div>
+                    </div>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="WosirUsername" label="wosir.cz – přezdívka"></div>
+                    <div class="inputContainer"><input is="emby-input" type="password" id="WosirPassword" label="wosir.cz – heslo"></div>
+                    <button is="emby-button" type="button" id="TestLogins" class="raised button-alt block"><span>Vyzkoušet přihlášení</span></button>
+                    <div id="TestResult" class="fieldDescription"></div>
+                </div>
+
+                <div class="verticalSection">
+                    <h3 class="sectionTitle">Jazyk a pojmenování</h3>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="SlovakFallback"><span>Když nejsou české, vzít slovenské</span></label>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="MarkAsDefault"><span>Ukládat jako výchozí stopu (video.cs.default.ass)</span></label>
+                        <div class="fieldDescription checkboxFieldDescription">Přehrávače pak titulky zapnou samy.</div>
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h3 class="sectionTitle">Časování</h3>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="EnableReferenceSync"><span>Srovnat podle anglických titulků ve videu</span></label>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="EnableAudioSync"><span>Když video titulky nemá, srovnat podle zvuku</span></label>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="MaxOffsetSeconds" min="1" max="600" label="Největší povolený posun (s)">
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="SaveUnverified"><span>Automaticky uložit i titulky s neověřeným časováním</span></label>
+                        <div class="fieldDescription checkboxFieldDescription">Titulky, které prokazatelně nesedí na anglickou stopu, se automaticky neukládají nikdy.</div>
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h3 class="sectionTitle">Vlastní sbírka titulků</h3>
+                    <div class="inputContainer">
+                        <textarea is="emby-textarea" id="LocalFolders" rows="3" label="Složky s vlastními titulky (jedna na řádek, cesta na serveru Jellyfinu)"></textarea>
+                        <div class="fieldDescription">Např. <code>/media/titulky</code>. Prohledají se podsložky i archivy zip/rar
+                            (i chráněné heslem k archivům kamui a i sbírky typu teamns-archiv.zip). Složka nebo archiv se spáruje s názvem sezóny
+                            na AniList, díl podle čísla v názvu souboru. Doplněk ze složek jen čte.</div>
+                    </div>
+                    <div class="checkboxContainer">
+                        <label><input is="emby-checkbox" type="checkbox" id="LocalFirst"><span>Dávat přednost vlastní sbírce před weby</span></label>
+                    </div>
+                    <button is="emby-button" type="button" id="LocalScan" class="raised button-alt block"><span>Prohledat sbírku</span></button>
+                    <div id="LocalResult" class="fieldDescription"></div>
+                </div>
+
+                <div class="verticalSection">
+                    <h3 class="sectionTitle">AI překlad</h3>
+                    <p class="fieldDescription">Když k dílu nejsou české titulky nikde k nalezení a video má vložené titulky v jiném jazyce
+                        (přednostně anglické), doplněk je přeloží pomocí AI. Časování se převezme z videa, soubor se uloží jako
+                        <code>video.cs.ai.default.ass</code> a jakmile vyjde fansub, nahradí ho.</p>
+                    <div class="checkboxContainer">
+                        <label><input is="emby-checkbox" type="checkbox" id="AiEnabled"><span>Zapnout AI překlad</span></label>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="AiAutomatic"><span>Překládat i automaticky (nové díly, denní úloha)</span></label>
+                        <div class="fieldDescription checkboxFieldDescription">Vypnuto = AI překlad jen ručně: detail dílu → Upravit titulky → Hledat → „AI překlad …“.</div>
+                    </div>
+                    <div class="selectContainer">
+                        <select is="emby-select" id="AiBackend" label="Překladač">
+                            <option value="claude-cli">Claude – předplatné claude.ai (Claude Code)</option>
+                            <option value="anthropic-api">Claude – API klíč (console.anthropic.com)</option>
+                            <option value="openai-api">OpenAI – jen API klíč (předplatné ChatGPT nelze bezpečně použít)</option>
+                        </select>
+                    </div>
+                    <div id="ClaudeBox" style="border:1px solid rgba(128,128,128,.4);border-radius:6px;padding:.8em 1em;margin:1em 0">
+                        <b>Claude – předplatné claude.ai</b>
+                        <div id="ClaudeStatus" class="fieldDescription">Zjišťuji stav…</div>
+                        <button is="emby-button" type="button" id="ClaudeInstall" class="raised button-alt"><span>1. Nainstalovat Claude Code</span></button>
+                        <button is="emby-button" type="button" id="ClaudeLogin" class="raised button-alt"><span>2. Přihlásit se ke Claude</span></button>
+                        <div id="ClaudeStep" style="display:none;margin-top:.8em">
+                            <div>Otevři odkaz, přihlas se svým účtem claude.ai a zkopíruj kód, který se ti zobrazí:</div>
+                            <div style="margin:.5em 0"><a id="ClaudeUrl" href="#" target="_blank" rel="noopener" class="button-link">Otevřít přihlášení ke Claude ↗</a></div>
+                            <div class="inputContainer"><input is="emby-input" type="text" id="ClaudeCode" label="Kód z claude.ai"></div>
+                            <button is="emby-button" type="button" id="ClaudeSubmit" class="raised button-submit"><span>3. Dokončit přihlášení</span></button>
+                        </div>
+                        <div class="fieldDescription">Instalace stáhne oficiální Claude Code od Anthropic do domovské složky uživatele, pod kterým běží Jellyfin.
+                            Token (platný 1 rok) se uloží jen do nastavení doplňku a nikde se nezobrazí.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="AiToken" label="Token / API klíč (vyplní se samo po přihlášení; pro API vlož API klíč)">
+                        <div class="fieldDescription">Claude: výstup příkazu <code>claude setup-token</code>. API: API klíč.</div>
+                    </div>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="AiModel" label="Model (prázdné = výchozí: Claude sonnet, OpenAI gpt-5-mini)"></div>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="AiCliPath" label="Cesta k programu claude (prázdné = z PATH)"></div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="AiDailyEpisodes" min="0" max="1000" label="Nejvíc přeložených dílů za den (0 = bez limitu)">
+                        <div class="fieldDescription">Limity předplatného sdílíš s běžným používáním Claude/ChatGPT.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="AiChunkLines" min="20" max="2000" label="Řádků v jednom požadavku (díl má ~300–500; víc = víc souvislostí, méně požadavků)">
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="AiMonthlyLimitUsd" min="0" max="1000" step="0.5" label="Měsíční limit útraty za API ($, 0 = bez limitu)">
+                        <div class="fieldDescription" id="AiSpent">Utraceno tento měsíc: …</div>
+                    </div>
+                    <button is="emby-button" type="button" id="TestAi" class="raised button-alt block"><span>Vyzkoušet AI překlad</span></button>
+                    <div id="TestAiResult" class="fieldDescription"></div>
+                </div>
+
+                <div class="verticalSection">
+                    <h3 class="sectionTitle">Ostatní</h3>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="ExcludedSeriesRegex" label="Vynechat seriály (regulární výraz)">
+                        <div class="fieldDescription">Např. <code>^(Naruto|Pokémon)</code> – seriály s českým dabingem nebo titulky v obraze.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="SkipIfSidecarExists"><span>Přeskočit díly, které už mají české/slovenské titulky vedle videa</span></label>
+                    </div>
+                    <div class="inputContainer"><input is="emby-input" type="number" id="CacheHours" min="1" max="168" label="Mezipaměť seznamů titulků (hodiny)"></div>
+                    <div class="inputContainer"><input is="emby-input" type="number" id="RequestDelayMs" min="0" max="10000" label="Prodleva mezi požadavky na jeden web (ms)"></div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="DailyRequestLimit" min="0" max="100000" label="Nejvíc požadavků na jeden web za den (0 = bez limitu)">
+                        <div class="fieldDescription">Pojistka, aby doplněk nikdy nezatěžoval fansub weby.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="RetryRejectedDays" min="1" max="365" label="Titulky, které k dílu nesedí, zkusit znovu za (dní)">
+                    </div>
+                </div>
+
+                <button is="emby-button" type="submit" class="raised button-submit block"><span>Uložit</span></button>
+
+                <div class="verticalSection">
+                    <h3 class="sectionTitle">Historie</h3>
+                    <button is="emby-button" type="button" id="ShowActivity" class="raised button-alt block"><span>Zobrazit posledních 300 záznamů</span></button>
+                    <pre id="Activity" style="white-space:pre-wrap;font-size:0.85em;max-height:40em;overflow:auto"></pre>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script type="text/javascript">
+        (function () {
+            var pluginId = '0b105cb3-606c-41f3-9a2b-a5c759d4d959';
+            var text = ['HiyoriUsername', 'HiyoriPassword', 'HnsEmail', 'HnsPassword', 'KamuiUsername', 'KamuiPassword',
+                'WosirUsername', 'WosirPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath'];
+            var num = ['MaxOffsetSeconds', 'CacheHours', 'RequestDelayMs', 'DailyRequestLimit', 'RetryRejectedDays', 'AiDailyEpisodes', 'AiChunkLines'];
+            var dec = ['AiMonthlyLimitUsd'];
+            var bool = ['SlovakFallback', 'MarkAsDefault', 'EnableReferenceSync', 'EnableAudioSync', 'SaveUnverified', 'SkipIfSidecarExists', 'AiEnabled', 'LocalFirst', 'AiAutomatic'];
+            var page = document.querySelector('#CzAnimeTitulkyConfigPage');
+            function el(id) { return page.querySelector('#' + id); }
+
+            page.addEventListener('pageshow', function () {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (c) {
+                    text.forEach(function (k) { el(k).value = c[k] || ''; });
+                    num.forEach(function (k) { el(k).value = c[k]; });
+                    dec.forEach(function (k) { el(k).value = c[k]; });
+                    bool.forEach(function (k) { el(k).checked = !!c[k]; });
+                    Dashboard.hideLoadingMsg();
+                    ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl('CzAnimeTitulky/AiUsage'), dataType: 'json' }).then(function (u) {
+                        el('AiSpent').textContent = 'Utraceno tento měsíc (odhad): ' + u.spent.toFixed(2) + ' $ z ' + (u.limit > 0 ? u.limit + ' $' : 'bez limitu') + ' · model ' + u.model;
+                    });
+                });
+            });
+
+            // saves the form; the test buttons call it first so that they test what is on the screen
+            function save() {
+                return ApiClient.getPluginConfiguration(pluginId).then(function (c) {
+                    text.forEach(function (k) { c[k] = el(k).value; });
+                    num.forEach(function (k) { c[k] = parseInt(el(k).value, 10) || 0; });
+                    dec.forEach(function (k) { c[k] = parseFloat(el(k).value) || 0; });
+                    bool.forEach(function (k) { c[k] = el(k).checked; });
+                    return ApiClient.updatePluginConfiguration(pluginId, c);
+                });
+            }
+
+            el('CzAnimeTitulkyConfigForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+                save().then(Dashboard.processPluginConfigurationUpdateResult);
+                return false;
+            });
+
+            function claudeShow(st) {
+                var t = st.Installed ? ('Claude Code ' + (st.Version || '') + ' ✓') : 'Claude Code není nainstalovaný';
+                t += st.HasToken ? ' · přihlášeno ✓' : ' · nepřihlášeno';
+                if (st.Message) { t += ' · ' + st.Message; }
+                el('ClaudeStatus').textContent = t;
+                el('ClaudeInstall').style.display = st.Installed ? 'none' : '';
+                el('ClaudeStep').style.display = st.Login === 'waiting-code' && st.LoginUrl ? '' : 'none';
+                if (st.LoginUrl) { el('ClaudeUrl').href = st.LoginUrl; }
+            }
+            function claudePoll() { api('GET', 'CzAnimeTitulky/Claude').then(claudeShow); }
+            function api(method, path) { return ApiClient.ajax({ type: method, url: ApiClient.getUrl(path), dataType: 'json' }); }
+            page.addEventListener('pageshow', claudePoll);
+            el('ClaudeInstall').addEventListener('click', function () {
+                el('ClaudeStatus').textContent = 'Instaluji Claude Code (může trvat minutu)…';
+                api('POST', 'CzAnimeTitulky/Claude/Install').then(function (r) { el('ClaudeStatus').textContent = r.message; claudePoll(); }, claudePoll);
+            });
+            el('ClaudeLogin').addEventListener('click', function () {
+                el('ClaudeStatus').textContent = 'Spouštím přihlášení…';
+                api('POST', 'CzAnimeTitulky/Claude/Login').then(claudeShow, claudePoll);
+            });
+            el('ClaudeSubmit').addEventListener('click', function () {
+                var code = el('ClaudeCode').value.trim();
+                if (!code) { return; }
+                el('ClaudeStatus').textContent = 'Ověřuji kód…';
+                api('POST', 'CzAnimeTitulky/Claude/Code?code=' + encodeURIComponent(code)).then(function (st) {
+                    claudeShow(st);
+                    if (st.HasToken) {
+                        el('ClaudeCode').value = '';
+                        ApiClient.getPluginConfiguration(pluginId).then(function (c) { el('AiToken').value = c.AiToken || ''; el('AiBackend').value = c.AiBackend; });
+                    }
+                }, claudePoll);
+            });
+
+            el('LocalScan').addEventListener('click', function () {
+                el('LocalResult').textContent = 'Ukládám nastavení a prohledávám…';
+                save().then(function () { return api('POST', 'CzAnimeTitulky/Local/Scan'); }).then(function (r) {
+                    el('LocalResult').innerHTML = '<b>' + r.count + '</b> sérií/sezón ve složkách ' + r.folders.join(', ') + ':<br>' + r.names.map(function (n) { var d = document.createElement('div'); d.textContent = n; return d.innerHTML; }).join(' · ');
+                }, function () { el('LocalResult').textContent = 'Prohledání selhalo.'; });
+            });
+
+            el('TestAi').addEventListener('click', function () {
+                el('TestAiResult').textContent = 'Ukládám nastavení a překládám zkušební věty…';
+                save().then(function () { return ApiClient.fetch({ url: ApiClient.getUrl('CzAnimeTitulky/TestAi'), type: 'POST', dataType: 'json' })
+; })
+                    .then(function (r) { el('TestAiResult').textContent = r.ok ? ('OK: ' + r.text) : ('CHYBA: ' + r.text); },
+                          function () { el('TestAiResult').textContent = 'Test selhal.'; });
+            });
+
+            el('ShowActivity').addEventListener('click', function () {
+                ApiClient.fetch({ url: ApiClient.getUrl('CzAnimeTitulky/Activity', { lines: 300 }), type: 'GET', dataType: 'json' })
+                    .then(function (r) { el('Activity').textContent = r.length ? r.slice().reverse().join('\n') : '(zatím nic)'; });
+            });
+
+            el('TestLogins').addEventListener('click', function () {
+                el('TestResult').textContent = 'Ukládám nastavení a zkouším…';
+                save().then(function () { return ApiClient.fetch({ url: ApiClient.getUrl('CzAnimeTitulky/TestLogins'), type: 'POST', dataType: 'json' }); })
+                    .then(function (r) {
+                        el('TestResult').textContent = Object.keys(r).map(function (k) { return k + ': ' + r[k]; }).join(' · ');
+                    }, function () { el('TestResult').textContent = 'Test selhal (uložil jsi nastavení?)'; });
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>
