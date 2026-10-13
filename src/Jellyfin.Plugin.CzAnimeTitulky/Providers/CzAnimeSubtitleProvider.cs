@@ -145,9 +145,8 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             // Skip versions that already failed for this video recently (no daily re-downloads).
             var age = TimeSpan.FromDays(Math.Max(1, Config.RetryRejectedDays));
             string? why = null;
-            // A failed download is usually temporary (site down, rate limit) – retry it after a day, not after RetryRejectedDays.
-            ranked = ranked.Where(x => !(_rejected.TryGet(RejectKey(video.Id, x.Candidate), age, out why)
-                && (why != NothingDownloaded || _rejected.TryGet(RejectKey(video.Id, x.Candidate), TimeSpan.FromDays(1), out _)))).ToList();
+            // Temporary failures (site down, rate limit) are not recorded here and are simply tried again next time.
+            ranked = ranked.Where(x => !_rejected.TryGet(RejectKey(video.Id, x.Candidate), age, out why)).ToList();
             if (ranked.Count == 0)
             {
                 ActivityLog.Write($"PŘESKOČENO {target.DisplayName}: všechny titulky byly v posledních {age.TotalDays:0} dnech zamítnuty ({why}), automaticky se zkusí znovu později – ručně přes Hledat titulky");

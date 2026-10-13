@@ -1,5 +1,11 @@
 # Změny
 
+## 1.7.1 – 2026-10-14
+
+- Šetrnost k webům: verze, ze které web nevydal použitelný soubor, se znovu zkouší až po *Znovu zkoušet
+  zamítnuté po (dny)* (výchozí 14), ne každý den (vráceno z 1.6.1). Dočasné výpadky webu se zamítnutím nepočítají
+  a zkouší se při dalším běhu jako dřív.
+
 ## 1.7.0 – 2026-10-14
 
 - AI překlad přes **lokální AI**: Ollama (vlastní rozhraní – větší kontext, bez „přemýšlení“) nebo jakýkoli server
@@ -14,8 +20,6 @@
   balík sezóny, nebo odkazy ke stažení v pořadí dílů. Pauza 5 s mezi dotazy; dočasná blokace archivu se nepočítá
   jako zamítnutí.
 - Všechny weby: hlavičky `Accept` a `Accept-Language` jako u prohlížeče (bez nich je archive.org odmítal).
-- Neúspěšné stažení (web nedostupný, limit dotazů) se automaticky zkusí znovu po 1 dni, ne až po 14 dnech jako
-  titulky s nesedícím časováním.
 
 ## 1.6.0 – 2026-10-13
 
