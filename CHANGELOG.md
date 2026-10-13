@@ -1,5 +1,13 @@
 # Změny
 
+## 1.6.0 – 2026-10-13
+
+- Nový zdroj **ange.3mka.cz** (3Mka): titulky po dílech, číslo dílu ověřené podle názvu souboru, balík všech dílů
+  jako záloha.
+- Nový zdroj **HannyaSubs** (hannya-subs.blogspot.com): soubory na mega.nz se stáhnou a rozšifrují přímo v doplňku,
+  díl se ověří podle názvu souboru ještě před stažením.
+- Řešení problémů: blokování webu DNS filtrem (Pi-hole/AdGuard).
+
 ## 1.5.2 – 2026-10-13
 
 - Ruční hledání (*Upravit titulky → lupa*) se vždy znovu zeptá webu – dřív vracelo „Žádné výsledky“, dokud platil

@@ -9,7 +9,7 @@ src/Jellyfin.Plugin.CzAnimeTitulky/
   Configuration/               nastavení + configPage.html
   Providers/                   CzAnimeSubtitleProvider (Search / GetSubtitles), Ticket (id výsledku)
   Matching/                    AniList, párování na hiyori.cz
-  Sources/                     klienti webů (hiyori, hns, kamui, wosir, přímé odkazy)
+  Sources/                     klienti webů (hiyori, hns, kamui, wosir, ange, HannyaSubs/mega.nz, přímé odkazy)
   Subtitles/                   načtení/posun ASS a SRT, rozbalení archivů
   Sync/                        srovnání časování (reference, zvuk), ffmpeg
   Api/                         endpointy pro stránku nastavení

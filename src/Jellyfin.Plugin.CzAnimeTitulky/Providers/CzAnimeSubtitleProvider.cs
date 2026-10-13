@@ -27,6 +27,8 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
     private readonly KamuiClient _kamui;
     private readonly WosirClient _wosir;
     private readonly DirectClient _direct;
+    private readonly AngeClient _ange;
+    private readonly HannyaClient _hannya;
     private readonly TeamNsClient _teamNs;
     private readonly AniListClient _aniList;
     private readonly Translation.SubtitleTranslator _translator;
@@ -44,6 +46,8 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         KamuiClient kamui,
         WosirClient wosir,
         DirectClient direct,
+        AngeClient ange,
+        HannyaClient hannya,
         TeamNsClient teamNs,
         AniListClient aniList,
         Translation.SubtitleTranslator translator,
@@ -59,6 +63,8 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         _kamui = kamui;
         _wosir = wosir;
         _direct = direct;
+        _ange = ange;
+        _hannya = hannya;
         _teamNs = teamNs;
         _aniList = aniList;
         _translator = translator;
@@ -584,6 +590,8 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         "kamui" => await _kamui.DownloadAsync(c.U, c.E, ct).ConfigureAwait(false),
         "wosir" => await _wosir.DownloadAsync(c.U, c.E, BdRelease().IsMatch(videoPath ?? string.Empty), ct).ConfigureAwait(false),
         "direct" => await _direct.DownloadAsync(c.U, ct).ConfigureAwait(false),
+        "ange" => await _ange.DownloadAsync(c.U, c.E, ct).ConfigureAwait(false),
+        "hannya" => await _hannya.DownloadAsync(c.U, c.E, ct).ConfigureAwait(false),
         "teamns" => await _teamNs.DownloadAsync((await _aniList.GetAsync(c.A, ct).ConfigureAwait(false))?.Titles() ?? Array.Empty<string>(), ct).ConfigureAwait(false),
         _ => null,
     };
@@ -637,6 +645,16 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         if (url.StartsWith("local:", StringComparison.Ordinal))
         {
             return "local";
+        }
+
+        if (SiteClient.IsOnHost(url, "ange.3mka.cz") && url.Contains("/anime/preklady/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "ange";
+        }
+
+        if (SiteClient.IsOnHost(url, "hannya-subs.blogspot.com"))
+        {
+            return "hannya";
         }
 
         if (url.Contains("teamns.gensubs.cz", StringComparison.OrdinalIgnoreCase))

@@ -19,6 +19,8 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<KamuiClient>();
         serviceCollection.AddSingleton<WosirClient>();
         serviceCollection.AddSingleton<DirectClient>();
+        serviceCollection.AddSingleton<AngeClient>();
+        serviceCollection.AddSingleton<HannyaClient>();
         serviceCollection.AddSingleton<TeamNsClient>();
         serviceCollection.AddSingleton<LocalClient>();
         serviceCollection.AddSingleton<AniListClient>();

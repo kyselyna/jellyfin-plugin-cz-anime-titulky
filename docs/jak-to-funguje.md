@@ -11,7 +11,7 @@ CzAnimeSubtitleProvider.Search
    └─ výsledky (automaticky: 1 výsledek s až 3 náhradami)
    ▼
 CzAnimeSubtitleProvider.GetSubtitles
-   ├─ stažení z webu (hiyori / hns / kamui / wosir / přímý odkaz)
+   ├─ stažení z webu (hiyori / hns / kamui / wosir / ange / HannyaSubs / přímý odkaz)
    ├─ PayloadExtractor: rozbalení archivu, výběr souboru, dekódování
    ├─ LanguageDetector: čeština nebo slovenština podle textu
    ├─ SyncService: srovnání časování (anglické titulky ve videu → zvuk)
@@ -63,6 +63,8 @@ mezi hledáním a stažením.
 | hns.sk | stránka anime → stránky dílů (číslo dílu z textu „ - N Zpět na anime“) → formulář `action=download` (POST) |
 | kamui-subs.cz | stránka projektu → odkaz „N. Díl“ → `/download/<id>/` → archiv chráněný heslem (heslo z nastavení doplňku) |
 | wosir.cz | odkaz z hiyori přesměruje na `/anime?id=N` → tabulka `div.subs tr.tsubs` → formulář TV nebo BD (podle videa) |
+| ange.3mka.cz | stránka projektu `/anime/preklady/<název>` → odkazy jDownloads po dílech v pořadí dílů (bez čísla, jen název epizody) → číslo dílu se ověří podle názvu staženého souboru; balík všech dílů jako záloha. Bez přihlášení. |
+| hannya-subs.blogspot.com | příspěvek projektu → odkazy `mega.nz/file/…` po dílech → podle zašifrovaného názvu souboru (MEGA atributy) se ověří číslo dílu, pak stažení a rozšifrování (AES-128-CTR klíčem z odkazu). Bez přihlášení. |
 | teamns.gensubs.cz | archiv skončené skupiny TeamNS – hiyori odkazuje jen na úvodní stránku. Seznam archivů (`hotovo.php`, `nedodelano.php`) → ZIP sezóny, jehož název odpovídá názvu sezóny na AniList (podobnost ≥ 90 %, stejná čísla a symboly jako „∬“) → díl podle čísla v názvu souboru |
 | přímé odkazy | odkazy končící `.ass/.srt/.ssa/.zip/.rar` (jen veřejné adresy – do místní sítě se doplněk nepřipojí nikdy) |
 
