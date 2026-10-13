@@ -1,5 +1,14 @@
 # Změny
 
+## 1.6.1 – 2026-10-13
+
+- Nový zdroj **web.archive.org**: archivované stránky zaniklých skupin (gawsubs.com, ngfailsub.eu…) – soubor dílu,
+  balík sezóny, nebo odkazy ke stažení v pořadí dílů. Pauza 5 s mezi dotazy; dočasná blokace archivu se nepočítá
+  jako zamítnutí.
+- Všechny weby: hlavičky `Accept` a `Accept-Language` jako u prohlížeče (bez nich je archive.org odmítal).
+- Neúspěšné stažení (web nedostupný, limit dotazů) se automaticky zkusí znovu po 1 dni, ne až po 14 dnech jako
+  titulky s nesedícím časováním.
+
 ## 1.6.0 – 2026-10-13
 
 - Nový zdroj **ange.3mka.cz** (3Mka): titulky po dílech, číslo dílu ověřené podle názvu souboru, balík všech dílů

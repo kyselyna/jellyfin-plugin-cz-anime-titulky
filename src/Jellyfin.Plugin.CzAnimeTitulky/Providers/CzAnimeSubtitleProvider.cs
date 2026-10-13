@@ -29,6 +29,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
     private readonly DirectClient _direct;
     private readonly AngeClient _ange;
     private readonly HannyaClient _hannya;
+    private readonly WaybackClient _wayback;
     private readonly TeamNsClient _teamNs;
     private readonly AniListClient _aniList;
     private readonly Translation.SubtitleTranslator _translator;
@@ -36,6 +37,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
     private readonly LocalClient _local;
     private readonly SyncService _sync;
     private readonly ILogger<CzAnimeSubtitleProvider> _logger;
+    private const string NothingDownloaded = "nothing downloaded";
     private readonly JsonCache<string> _rejected = new("rejected");
 
     public CzAnimeSubtitleProvider(
@@ -48,6 +50,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         DirectClient direct,
         AngeClient ange,
         HannyaClient hannya,
+        WaybackClient wayback,
         TeamNsClient teamNs,
         AniListClient aniList,
         Translation.SubtitleTranslator translator,
@@ -65,6 +68,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         _direct = direct;
         _ange = ange;
         _hannya = hannya;
+        _wayback = wayback;
         _teamNs = teamNs;
         _aniList = aniList;
         _translator = translator;
@@ -141,7 +145,9 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             // Skip versions that already failed for this video recently (no daily re-downloads).
             var age = TimeSpan.FromDays(Math.Max(1, Config.RetryRejectedDays));
             string? why = null;
-            ranked = ranked.Where(x => !_rejected.TryGet(RejectKey(video.Id, x.Candidate), age, out why)).ToList();
+            // A failed download is usually temporary (site down, rate limit) – retry it after a day, not after RetryRejectedDays.
+            ranked = ranked.Where(x => !(_rejected.TryGet(RejectKey(video.Id, x.Candidate), age, out why)
+                && (why != NothingDownloaded || _rejected.TryGet(RejectKey(video.Id, x.Candidate), TimeSpan.FromDays(1), out _)))).ToList();
             if (ranked.Count == 0)
             {
                 ActivityLog.Write($"PŘESKOČENO {target.DisplayName}: všechny titulky byly v posledních {age.TotalDays:0} dnech zamítnuty ({why}), automaticky se zkusí znovu později – ručně přes Hledat titulky");
@@ -217,7 +223,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
                 reasons.Add($"{c.G}: nothing usable downloaded from {c.K}");
                 if (ticket.A)
                 {
-                    _rejected.Set(RejectKey(ticket.V, c), "nothing downloaded");
+                    _rejected.Set(RejectKey(ticket.V, c), NothingDownloaded);
                 }
 
                 continue;
@@ -592,6 +598,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         "direct" => await _direct.DownloadAsync(c.U, ct).ConfigureAwait(false),
         "ange" => await _ange.DownloadAsync(c.U, c.E, ct).ConfigureAwait(false),
         "hannya" => await _hannya.DownloadAsync(c.U, c.E, ct).ConfigureAwait(false),
+        "wayback" => await _wayback.DownloadAsync(c.U, c.E, ct).ConfigureAwait(false),
         "teamns" => await _teamNs.DownloadAsync((await _aniList.GetAsync(c.A, ct).ConfigureAwait(false))?.Titles() ?? Array.Empty<string>(), ct).ConfigureAwait(false),
         _ => null,
     };
@@ -615,6 +622,12 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         if (string.IsNullOrEmpty(url))
         {
             return null;
+        }
+
+        // First: an archived page may carry another site's name in its path.
+        if (SiteClient.IsOnHost(url, "web.archive.org"))
+        {
+            return "wayback";
         }
 
         if (url.StartsWith("/anime/downloadsubtitles", StringComparison.OrdinalIgnoreCase) || url.Contains("hiyori.cz/anime/downloadsubtitles", StringComparison.OrdinalIgnoreCase))

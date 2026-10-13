@@ -3,3 +3,5 @@ bin/
 obj/
 *.user
 copy-only.sh
+tools/SourceTest/bin/
+tools/SourceTest/obj/

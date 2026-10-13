@@ -65,11 +65,21 @@ public abstract class SiteClient : IDisposable
         }
 
         _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60), MaxResponseContentBufferSize = MaxDownloadBytes };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 Jellyfin-CzAnimeTitulky");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+        _http.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        _http.DefaultRequestHeaders.AcceptLanguage.ParseAdd("cs,en;q=0.8");
     }
 
     protected ILogger Logger { get; }
+
+    /// <summary>Browser-like by default (some fansub sites serve bots differently); always names the plugin.</summary>
+#pragma warning disable CA2214 // read in the constructor: overrides return constants
+    protected virtual string UserAgent =>
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 Jellyfin-CzAnimeTitulky";
+#pragma warning restore CA2214
+
+    /// <summary>Lower bound for the pause between two requests to this site (slow or strict sites).</summary>
+    protected virtual int MinDelayMs => 0;
 
     protected CookieContainer Cookies { get; }
 
@@ -148,7 +158,7 @@ public abstract class SiteClient : IDisposable
                 throw new HttpRequestException($"{Name}: daily request limit reached");
             }
 
-            var wait = _last.AddMilliseconds(Config.RequestDelayMs) - DateTime.UtcNow;
+            var wait = _last.AddMilliseconds(Math.Max(Config.RequestDelayMs, MinDelayMs)) - DateTime.UtcNow;
             if (wait > TimeSpan.Zero)
             {
                 await Task.Delay(wait, ct).ConfigureAwait(false);
@@ -200,7 +210,7 @@ public abstract class SiteClient : IDisposable
     }
 
     protected Task<Payload?> DownloadGetAsync(string url, CancellationToken ct) =>
-        DownloadAsync(new HttpRequestMessage(HttpMethod.Get, url), Path.GetFileName(new Uri(url).AbsolutePath), ct);
+        DownloadAsync(new HttpRequestMessage(HttpMethod.Get, url), Uri.UnescapeDataString(Path.GetFileName(new Uri(url).AbsolutePath)), ct);
 
     protected Task<Payload?> DownloadPostAsync(string url, IEnumerable<KeyValuePair<string, string>> form, string fallbackName, CancellationToken ct) =>
         DownloadAsync(new HttpRequestMessage(HttpMethod.Post, url) { Content = new FormUrlEncodedContent(form) }, fallbackName, ct);

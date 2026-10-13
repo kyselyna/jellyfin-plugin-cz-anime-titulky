@@ -21,6 +21,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddSingleton<DirectClient>();
         serviceCollection.AddSingleton<AngeClient>();
         serviceCollection.AddSingleton<HannyaClient>();
+        serviceCollection.AddSingleton<WaybackClient>();
         serviceCollection.AddSingleton<TeamNsClient>();
         serviceCollection.AddSingleton<LocalClient>();
         serviceCollection.AddSingleton<AniListClient>();
