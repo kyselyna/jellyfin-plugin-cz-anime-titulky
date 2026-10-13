@@ -1,5 +1,13 @@
 # Změny
 
+## 1.5.2 – 2026-10-13
+
+- Ruční hledání (*Upravit titulky → lupa*) se vždy znovu zeptá webu – dřív vracelo „Žádné výsledky“, dokud platil
+  zapamatovaný výsledek „anime není na hiyori.cz“ (7 dní).
+- Automatika si „nenalezeno na hiyori“ pamatuje jen 1 den místo 7.
+- Stránka z hiyori načtená bez přihlášení (bez tabulky titulků) se neukládá do mezipaměti – krátký výpadek
+  přihlášení tak nezablokuje hledání na celý den.
+
 ## 1.5.1 – 2026-10-13
 
 - Historie: když automatika přeskočí díl, protože všechny verze titulků nedávno zamítla (nesedělo časování), zapíše

@@ -110,7 +110,11 @@ public sealed partial class HiyoriClient : SiteClient
         }
 
         var anime = new HiyoriAnime(path, m.Success ? int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : null, rows, DateTime.UtcNow);
-        _pages[path] = anime;
+        if (panel is not null || anime.AniListId is not null)
+        {
+            _pages[path] = anime; // a logged-out page (no table, no AniList link) is not cached
+        }
+
         return anime;
     }
 

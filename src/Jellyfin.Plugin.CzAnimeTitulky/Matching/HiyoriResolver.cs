@@ -30,7 +30,7 @@ public sealed class HiyoriResolver
         _logger = logger;
     }
 
-    public async Task<Target?> ResolveAsync(Video video, CancellationToken ct)
+    public async Task<Target?> ResolveAsync(Video video, bool fresh, CancellationToken ct)
     {
         var ids = await ResolveIdsAsync(video, ct).ConfigureAwait(false);
         if (ids is null)
@@ -38,7 +38,7 @@ public sealed class HiyoriResolver
             return null;
         }
 
-        var anime = await FindHiyoriAsync(ids.Value.AniListId, ct).ConfigureAwait(false);
+        var anime = await FindHiyoriAsync(ids.Value.AniListId, fresh, ct).ConfigureAwait(false);
         return anime is null ? null : new Target(video, ids.Value.Name, ids.Value.Episode, anime, ids.Value.AniListId);
     }
 
@@ -106,7 +106,7 @@ public sealed class HiyoriResolver
         return (await _aniList.GetSeasonAsync(first.Value, season, ct).ConfigureAwait(false))?.Id;
     }
 
-    private async Task<HiyoriAnime?> FindHiyoriAsync(int aniId, CancellationToken ct)
+    private async Task<HiyoriAnime?> FindHiyoriAsync(int aniId, bool fresh, CancellationToken ct)
     {
         var key = aniId.ToString(System.Globalization.CultureInfo.InvariantCulture);
         if (_map.TryGet(key, TimeSpan.FromDays(3650), out var path) && path is not null)
@@ -114,9 +114,10 @@ public sealed class HiyoriResolver
             return await _hiyori.GetAnimeAsync(path, ct).ConfigureAwait(false);
         }
 
-        if (_map.TryGet(key, TimeSpan.FromDays(7), out _))
+        // "Not found" is remembered for a day – except for a manual search, which always asks the site again.
+        if (!fresh && _map.TryGet(key, TimeSpan.FromDays(1), out _))
         {
-            return null; // recently not found
+            return null;
         }
 
         var media = await _aniList.GetAsync(aniId, ct).ConfigureAwait(false);

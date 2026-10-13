@@ -101,7 +101,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             return Array.Empty<RemoteSubtitleInfo>();
         }
 
-        var target = await _resolver.ResolveAsync(video, cancellationToken).ConfigureAwait(false);
+        var target = await _resolver.ResolveAsync(video, !request.IsAutomated, cancellationToken).ConfigureAwait(false);
         var local = await LocalCandidateAsync(video, cancellationToken).ConfigureAwait(false);
         var ranked = target is null ? new List<(HiyoriRow Row, Candidate Candidate)>() : Rank(target, want);
         if (local is not null)
