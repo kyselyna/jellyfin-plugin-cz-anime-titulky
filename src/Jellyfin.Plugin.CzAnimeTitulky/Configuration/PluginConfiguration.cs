@@ -84,6 +84,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Local AI server, e.g. "http://192.168.1.50:11434" (Ollama) or "http://host:1234/v1" (LM Studio, llama.cpp, vLLM…).</summary>
     public string AiLocalUrl { get; set; } = string.Empty;
 
+    /// <summary>Optional key of the local AI server – separate from AiToken so a cloud API key never goes to it.</summary>
+    public string AiLocalKey { get; set; } = string.Empty;
+
     /// <summary>Path of the CLI (claude / codex), empty = from PATH.</summary>
     public string AiCliPath { get; set; } = string.Empty;
 

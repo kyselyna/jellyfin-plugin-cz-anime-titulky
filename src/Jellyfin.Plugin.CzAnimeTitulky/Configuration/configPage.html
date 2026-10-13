@@ -118,9 +118,10 @@
                     <div id="LocalBox" style="border:1px solid rgba(128,128,128,.4);border-radius:6px;padding:.8em 1em;margin:1em 0">
                         <b>Lokální AI</b>
                         <div class="inputContainer"><input is="emby-input" type="text" id="AiLocalUrl" label="Adresa serveru (Ollama: http://IP:11434, jiné: http://IP:port/v1)"></div>
+                        <div class="inputContainer"><input is="emby-input" type="password" id="AiLocalKey" label="API klíč serveru (většinou prázdné)"></div>
                         <button is="emby-button" type="button" id="LocalModels" class="raised button-alt"><span>Načíst modely</span></button>
                         <div id="LocalModelsResult" class="fieldDescription"></div>
-                        <div class="fieldDescription">Ollama musí poslouchat v síti (proměnná <code>OLLAMA_HOST=0.0.0.0</code>). API klíč většinou není potřeba – pole Token nech prázdné.
+                        <div class="fieldDescription">Ollama musí poslouchat v síti (proměnná <code>OLLAMA_HOST=0.0.0.0</code>). API klíč většinou není potřeba. Klíč z pole Token / API klíč (Claude, OpenAI) se lokálnímu serveru nikdy neposílá.
                             Doporučení: model aspoň ~14 mld. parametrů, např. <code>qwen3:30b</code>; modely na programování (…-coder) na překlad nejsou. Viz dokumentace AI překladu.</div>
                     </div>
                     <div class="inputContainer"><input is="emby-input" type="text" id="AiModel" list="AiModelList" label="Model (prázdné = výchozí: Claude sonnet, OpenAI gpt-5-mini; lokální AI: vyber po Načíst modely)"><datalist id="AiModelList"></datalist></div>
@@ -174,7 +175,7 @@
         (function () {
             var pluginId = '0b105cb3-606c-41f3-9a2b-a5c759d4d959';
             var text = ['HiyoriUsername', 'HiyoriPassword', 'HnsEmail', 'HnsPassword', 'KamuiUsername', 'KamuiPassword',
-                'WosirUsername', 'WosirPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath', 'AiLocalUrl'];
+                'WosirUsername', 'WosirPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath', 'AiLocalUrl', 'AiLocalKey'];
             var num = ['MaxOffsetSeconds', 'CacheHours', 'RequestDelayMs', 'DailyRequestLimit', 'RetryRejectedDays', 'AiDailyEpisodes', 'AiChunkLines'];
             var dec = ['AiMonthlyLimitUsd'];
             var bool = ['SlovakFallback', 'MarkAsDefault', 'EnableReferenceSync', 'EnableAudioSync', 'SaveUnverified', 'SkipIfSidecarExists', 'AiEnabled', 'LocalFirst', 'AiAutomatic'];

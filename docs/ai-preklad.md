@@ -92,7 +92,8 @@ Překlad běží na tvém vlastním serveru – nic se neposílá ven a nic se n
    - LM Studio, llama.cpp (`llama-server`), vLLM, LocalAI…: adresa jejich OpenAI rozhraní končící `/v1`,
      např. `http://IP:1234/v1` (LM Studio), `http://IP:8080/v1` (llama.cpp), `http://IP:8000/v1` (vLLM).
 3. **Načíst modely** → vyber model v poli *Model* → **Uložit** → **Vyzkoušet AI překlad**.
-4. Pole *Token / API klíč* nech prázdné (vyplň jen, když tvůj server klíč vyžaduje).
+4. *API klíč serveru* nech prázdné (vyplň jen, když tvůj server klíč vyžaduje). Klíč z pole *Token / API klíč*
+   (Claude, OpenAI) se lokálnímu serveru nikdy neposílá.
 
 **Jak doplněk s lokální AI pracuje:**
 - u Ollamy používá její vlastní rozhraní: zvětší kontextové okno na 16 384 tokenů (výchozí 2–4 tisíce by se

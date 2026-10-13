@@ -5,6 +5,7 @@
 - AI překlad přes **lokální AI**: Ollama (vlastní rozhraní – větší kontext, bez „přemýšlení“) nebo jakýkoli server
   s OpenAI rozhraním (LM Studio, llama.cpp, vLLM, LocalAI…). V nastavení adresa serveru a tlačítko *Načíst modely*.
   Menší dávky (≤ 100 řádků), filtr `<think>`, čekání až 30 minut, bez počítání útraty.
+  Vlastní pole pro klíč lokálního serveru – klíč Claude/OpenAI se mu nikdy neposílá.
 - Nastavení: pole pro Claude a lokální AI se ukazují jen u zvoleného překladače.
 
 ## 1.6.1 – 2026-10-13

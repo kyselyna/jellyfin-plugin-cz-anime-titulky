@@ -218,9 +218,9 @@ public sealed class AiBackend
                 ["messages"] = new object[] { new { role = "system", content = system }, new { role = "user", content = prompt } },
             }),
         };
-        if (!string.IsNullOrWhiteSpace(Config.AiToken))
+        if (!string.IsNullOrWhiteSpace(Config.AiLocalKey))
         {
-            req2.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Config.AiToken.Trim());
+            req2.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Config.AiLocalKey.Trim());
         }
 
         using var resp2 = await LocalHttp.SendAsync(req2, timeout.Token).ConfigureAwait(false);
