@@ -49,7 +49,12 @@ public sealed partial class LocalClient
     }
 
     /// <summary>Entry for one of the season titles, or null.</summary>
-    public async Task<LocalEntry?> FindAsync(IEnumerable<string> titles, CancellationToken ct)
+    /// <summary>
+    /// Entry for a season. An entry named with a season ("Nisekoi-s2", "Season 2", "Overlord II") only serves that
+    /// season; an entry without one serves season 1 – and never a later season when it is just the series name
+    /// (AniList calls Nisekoi season 2 "Nisekoi:", which would otherwise hit the season 1 archive).
+    /// </summary>
+    public async Task<LocalEntry?> FindAsync(IEnumerable<string> titles, int season, string? seriesName, CancellationToken ct)
     {
         var index = await IndexAsync(ct).ConfigureAwait(false);
         if (index.Count == 0)
@@ -57,9 +62,76 @@ public sealed partial class LocalClient
             return null;
         }
 
-        var key = TeamNsClient.Match(titles, index.ToDictionary(k => k.Key, k => k.Key));
+        var series = seriesName is null ? null : TeamNsClient.Normalize(seriesName);
+        var usable = index.Where(kv => EntrySeason(kv.Value.Name) is { } s
+                ? s == season
+                : season <= 1 || (series is not null && kv.Key != series))
+            .ToDictionary(k => k.Key, k => k.Key);
+        var all = titles.ToList();
+        if (season > 1 && seriesName is not null)
+        {
+            all.AddRange(new[] { $"{seriesName} s{season}", $"{seriesName} season {season}", $"{seriesName} {season}" });
+        }
+
+        var key = TeamNsClient.Match(all, usable);
+        if (key is null && season > 1)
+        {
+            // A collection of several seasons under the series name is fine when its files say "S02E05".
+            var whole = TeamNsClient.Match(all, index.Where(kv => EntrySeason(kv.Value.Name) is null).ToDictionary(k => k.Key, k => k.Key));
+            if (whole is not null && HasSeasonFiles(index[whole], season))
+            {
+                key = whole;
+            }
+        }
+
         return key is null ? null : index[key];
     }
+
+    private bool HasSeasonFiles(LocalEntry entry, int season)
+    {
+        if (!IsInside(entry.Path))
+        {
+            return false;
+        }
+
+        IEnumerable<string> names;
+        if (Directory.Exists(entry.Path))
+        {
+            names = Directory.EnumerateFiles(entry.Path, "*", SearchOption.AllDirectories).Select(f => System.IO.Path.GetFileName(f));
+        }
+        else
+        {
+            using var archive = Open(entry.Path);
+            names = archive.Entries.Where(e => !e.IsDirectory && (entry.Inner is null || (e.Key ?? string.Empty).Replace('\\', '/').StartsWith(entry.Inner, StringComparison.Ordinal)))
+                .Select(e => System.IO.Path.GetFileName(e.Key ?? string.Empty)).ToList();
+        }
+
+        return names.Any(n => SxxEyy().Match(n) is { Success: true } m && int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) == season);
+    }
+
+    /// <summary>Season number written in an entry name, or null.</summary>
+    internal static int? EntrySeason(string name)
+    {
+        var m = SeasonInName().Match(name);
+        if (m.Success)
+        {
+            var g = m.Groups.Cast<System.Text.RegularExpressions.Group>().Skip(1).First(x => x.Success).Value;
+            return g.ToUpperInvariant() switch
+            {
+                "II" => 2,
+                "III" => 3,
+                "IV" => 4,
+                "V" => 5,
+                _ => int.Parse(g, System.Globalization.CultureInfo.InvariantCulture),
+            };
+        }
+
+        return null;
+    }
+
+    // "-s2", "S02", "Season 2", "série 2", "2nd Season", "… II", "… 2" at the end
+    [GeneratedRegex(@"(?:^|[\s_\-.\[(])(?:s|season|s[ée]rie|sez[óo]na)\s*0*(\d{1,2})(?=$|[\s_\-.\])])|(\d{1,2})(?:st|nd|rd|th)\s*season|\s(II|III|IV|V)$|[\s\-_](\d)$", RegexOptions.IgnoreCase)]
+    private static partial Regex SeasonInName();
 
     /// <summary>Entry by its index key (from a subtitle id) – paths never come from outside.</summary>
     public async Task<LocalEntry?> GetAsync(string key, CancellationToken ct) =>

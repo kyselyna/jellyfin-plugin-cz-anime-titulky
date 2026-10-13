@@ -1,5 +1,12 @@
 # Změny
 
+## 1.8.1 – 2026-10-14
+
+- Vlastní sbírka: párování podle sezóny. Položka s označením sezóny (`-s2`, `Season 2`, `2nd Season`, `II`, `… 2`)
+  slouží jen té sezóně; položka bez označení jen 1. sezóně – už ne 2. sérii, když ji AniList pojmenuje stejně
+  jako 1. (Nisekoi 2 = „Nisekoi:“). Pro další sezóny se zkouší i „Název s2 / season 2 / 2“. Sbírka s více
+  sezónami pod jedním názvem dál funguje, když soubory nesou `SxxEyy`.
+
 ## 1.8.0 – 2026-10-14
 
 - Volitelně **hlášení z Jellyseerr / Overseerr**: hlášení typu *Titulky* doplněk každých 15 minut zpracuje – vyřadí

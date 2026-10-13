@@ -114,6 +114,12 @@ které nejsou anime, ale nemá smysl (hledá jen na anime webech).
 S volbou *Ukládat jako výchozí stopu* není potřeba nic. Bez ní nastav každému uživateli
 *Profil → Přehrávání → Jazyk titulků: Czech* a *Režim titulků: Výchozí*.
 
+### Sezóny ve vlastní sbírce
+
+Pojmenuj složku nebo archiv další sezóny s číslem sezóny – `Nisekoi-s2`, `Nisekoi Season 2`, `Nisekoi 2nd Season`,
+`Overlord II` – nebo jejím názvem z AniListu. Položka bez čísla sezóny se použije jen pro 1. sezónu (výjimka: jedna
+položka se soubory `S01E01…`, `S02E01…` pro všechny sezóny).
+
 ## Hlášení z Jellyseerr / Overseerr (volitelné)
 
 Kdo používá Jellyseerr nebo Overseerr, může nechat doplněk řešit hlášení typu **Titulky**:

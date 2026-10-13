@@ -450,7 +450,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             titles.Add(e.SeriesName);
         }
 
-        var entry = await _local.FindAsync(titles, ct).ConfigureAwait(false);
+        var entry = await _local.FindAsync(titles, ids.Value.Season, (video as MediaBrowser.Controller.Entities.TV.Episode)?.SeriesName, ct).ConfigureAwait(false);
         if (entry is null || _local.Load(entry, ids.Value.Season, ids.Value.Episode) is null)
         {
             return null;
