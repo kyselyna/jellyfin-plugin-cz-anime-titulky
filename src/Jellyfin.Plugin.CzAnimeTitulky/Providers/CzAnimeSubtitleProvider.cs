@@ -134,9 +134,11 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         {
             // Skip versions that already failed for this video recently (no daily re-downloads).
             var age = TimeSpan.FromDays(Math.Max(1, Config.RetryRejectedDays));
-            ranked = ranked.Where(x => !_rejected.TryGet(RejectKey(video.Id, x.Candidate), age, out _)).ToList();
+            string? why = null;
+            ranked = ranked.Where(x => !_rejected.TryGet(RejectKey(video.Id, x.Candidate), age, out why)).ToList();
             if (ranked.Count == 0)
             {
+                ActivityLog.Write($"PŘESKOČENO {target.DisplayName}: všechny titulky byly v posledních {age.TotalDays:0} dnech zamítnuty ({why}), automaticky se zkusí znovu později – ručně přes Hledat titulky");
                 return Array.Empty<RemoteSubtitleInfo>();
             }
 
@@ -154,6 +156,15 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         var video = _library.GetItemById(ticket.V) as Video;
         var cfg = Config;
         var reasons = new List<string>();
+
+        // Jellyfin writes the file only after we return – check first that the folder takes new files (a full disk
+        // would otherwise lose the subtitles silently after downloading them from the site).
+        if (video?.Path is not null && !CanWrite(Path.GetDirectoryName(video.Path)!, out var writeError))
+        {
+            ActivityLog.Write($"NEULOŽENO {Describe(video)}: do složky videa nelze zapisovat ({writeError}) – plný disk nebo chybí práva");
+            throw new IOException($"CZ Anime Titulky: cannot write next to the video ({writeError})");
+        }
+
         foreach (var c in ticket.C.Take(3))
         {
             // The id arrives through the API – accept only links the site client itself would produce.
@@ -229,6 +240,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             _logger.LogInformation("{Video}: saved {Lang} subtitles by {Group} [{Release}] from {Site}, timing {Outcome}", video?.Name, lang, c.G, c.R, c.K, outcome);
             ActivityLog.Write($"ULOŽENO  {Describe(video)}: {lang.ToUpperInvariant()} {c.G} [{c.R}] z {c.K}, časování: {outcome}");
             RemoveAiSidecars(video?.Path); // a real fansub replaces the AI translation
+            VerifySavedLater(video, lang);
             return new SubtitleResponse
             {
                 Format = doc.Format,
@@ -379,6 +391,61 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
     }
 
     private static string RejectKey(Guid video, Candidate c) => $"{video:N}|{c.K}|{c.U}|{c.E}";
+
+    private static bool CanWrite(string dir, out string error)
+    {
+        var probe = Path.Combine(dir, $".czat-{Guid.NewGuid():N}.tmp");
+        try
+        {
+            File.WriteAllBytes(probe, new byte[16]);
+            File.Delete(probe);
+            error = string.Empty;
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            error = ex.Message;
+            try
+            {
+                File.Delete(probe);
+            }
+            catch (Exception)
+            {
+                // nothing was created
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>Jellyfin saves the stream after GetSubtitles returns and only logs a failure – report it in our history too.</summary>
+    private static void VerifySavedLater(Video? video, string lang)
+    {
+        if (video?.Path is null)
+        {
+            return;
+        }
+
+        var since = DateTime.UtcNow.AddSeconds(-5);
+        var name = Describe(video);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(60)).ConfigureAwait(false);
+            try
+            {
+                var dir = Path.GetDirectoryName(video.Path)!;
+                var stem = Path.GetFileNameWithoutExtension(video.Path) + "." + lang;
+                if (!Directory.EnumerateFiles(dir, stem + "*").Any(f => File.GetLastWriteTimeUtc(f) >= since))
+                {
+                    ActivityLog.Write($"CHYBA     {name}: titulky se u videa neobjevily – Jellyfin je nedokázal zapsat (plný disk? viz log Jellyfinu)");
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                ActivityLog.Write($"CHYBA     {name}: kontrolu uložení nelze provést ({ex.Message})");
+            }
+        });
+    }
 
     private static string Describe(Video? v) => v switch
     {

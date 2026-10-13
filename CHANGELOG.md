@@ -1,5 +1,14 @@
 # Změny
 
+## 1.5.1 – 2026-10-13
+
+- Historie: když automatika přeskočí díl, protože všechny verze titulků nedávno zamítla (nesedělo časování), zapíše
+  `PŘESKOČENO` s důvodem – dřív zůstal jen řádek `HLEDÁNÍ` a vypadalo to jako zaseknutí.
+- Před stažením se ověří, že do složky videa jde zapisovat (plný disk) – titulky se zbytečně nestahují a v historii
+  je `NEULOŽENO` s důvodem.
+- Po uložení se zkontroluje, že soubor u videa opravdu vznikl; jinak `CHYBA` v historii (Jellyfin chybu zápisu
+  hlásí jen do svého logu).
+
 ## 1.5.0 – 2026-10-12
 
 - AI: **nic se nezahazuje** – použitelné řádky z každé odpovědi (i rozbité nebo uříznuté) se hned ukládají, znovu se

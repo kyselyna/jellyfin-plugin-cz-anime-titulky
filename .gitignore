@@ -2,3 +2,4 @@ deploy.sh
 bin/
 obj/
 *.user
+copy-only.sh

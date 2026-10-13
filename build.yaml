@@ -1,6 +1,6 @@
 name: "CZ Anime Titulky"
 guid: "0b105cb3-606c-41f3-9a2b-a5c759d4d959"
-version: "1.5.0.0"
+version: "1.5.1.0"
 targetAbi: "12.1.0.0"
 framework: "net10.0"
 owner: "kyselyna"

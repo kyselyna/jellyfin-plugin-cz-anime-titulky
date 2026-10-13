@@ -79,7 +79,7 @@ Tlačítko **Zobrazit posledních 300 záznamů** ukáže, co doplněk dělal:
 2026-10-12 16:43:47  ULOŽENO  Coppelion S01E02: SK Hns.sk [HorribleSubs] z hns, časování: reference po částech, 98 %
 ```
 
-Záznamy: `HLEDÁNÍ`, `ULOŽENO`, `NEULOŽENO` (s důvodem pro každou zkoušenou verzi), `NENALEZENO`, `PŘESKOČENO`.
+Záznamy: `HLEDÁNÍ`, `ULOŽENO`, `NEULOŽENO` (s důvodem pro každou zkoušenou verzi), `NENALEZENO`, `PŘESKOČENO` (mimo jiné dříve zamítnuté verze), `CHYBA` (např. Jellyfin nedokázal soubor zapsat).
 Soubor leží v `plugins/Jellyfin.Plugin.CzAnimeTitulky/activity.log` v datovém adresáři Jellyfinu (mezipaměť vedle ve složce `cache/`).
 
 ## 2. Knihovna anime
