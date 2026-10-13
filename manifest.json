@@ -3,6 +3,14 @@
     "guid": "0b105cb3-606c-41f3-9a2b-a5c759d4d959",
     "versions": [
       {
+        "version": "1.6.1.0",
+        "changelog": "AI překlad: když fansub nikde není, přeloží vložené (anglické) titulky do češtiny přes Claude (předplatné claude.ai) nebo API; časování z videa, fansub ho později nahradí.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://github.com/kyselyna/jellyfin-plugin-cz-anime-titulky/releases/download/v1.6.1/cz-anime-titulky_1.6.1.0.zip",
+        "checksum": "41064325dab10720d393d0ae75554656",
+        "timestamp": "2026-10-13T22:43:50Z"
+      },
+      {
         "version": "1.6.0.0",
         "changelog": "AI překlad: když fansub nikde není, přeloží vložené (anglické) titulky do češtiny přes Claude (předplatné claude.ai) nebo API; časování z videa, fansub ho později nahradí.",
         "targetAbi": "12.1.0.0",
