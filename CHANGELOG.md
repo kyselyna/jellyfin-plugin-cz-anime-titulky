@@ -1,5 +1,12 @@
 # Změny
 
+## 1.8.0 – 2026-10-14
+
+- Volitelně **hlášení z Jellyseerr / Overseerr**: hlášení typu *Titulky* doplněk každých 15 minut zpracuje – vyřadí
+  uloženou verzi, stáhne jinou (nebo stejnou znovu srovná), odpoví v hlášení a volitelně ho označí jako vyřešené;
+  když nic lepšího není, vrátí původní titulky. Zapíná se v nastavení (adresa + API klíč).
+- Doplněk si pamatuje, kterou verzi titulků ke kterému videu uložil.
+
 ## 1.7.1 – 2026-10-14
 
 - Šetrnost k webům: verze, ze které web nevydal použitelný soubor, se znovu zkouší až po *Znovu zkoušet

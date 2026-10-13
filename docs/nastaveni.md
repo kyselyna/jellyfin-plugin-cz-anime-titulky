@@ -113,3 +113,22 @@ které nejsou anime, ale nemá smysl (hledá jen na anime webech).
 
 S volbou *Ukládat jako výchozí stopu* není potřeba nic. Bez ní nastav každému uživateli
 *Profil → Přehrávání → Jazyk titulků: Czech* a *Režim titulků: Výchozí*.
+
+## Hlášení z Jellyseerr / Overseerr (volitelné)
+
+Kdo používá Jellyseerr nebo Overseerr, může nechat doplněk řešit hlášení typu **Titulky**:
+
+1. *Řešit hlášení „Titulky“* – zapnout; vyplnit **adresu** (např. `http://192.168.1.20:5055`) a **API klíč**
+   (Seerr → Nastavení → Obecné). *Vyzkoušet spojení se Seerrem* ukáže počet otevřených hlášení.
+2. Úloha **Hlášení titulků z Jellyseerr** (kategorie CZ Anime Titulky) běží každých 15 minut. U každého nového
+   hlášení titulků:
+   - najde nahlášený díl (u seriálu je potřeba vybrat sezónu – celou sezónu nebo konkrétní díl, nejvýš 30 dílů);
+   - verzi titulků, kterou doplněk uložil, vyřadí (14 dní se nepoužije) a titulky doplňku odloží jako `*.nahlaseno`;
+   - spustí nové automatické hledání → jiná verze, nebo stejná znovu srovnaná;
+   - uloží-li se jiné titulky, záloha se smaže, do hlášení přijde komentář s tím, co se stáhlo, a (volitelně) se
+     hlášení označí jako vyřešené;
+   - když nic lepšího není (nebo se stáhla úplně stejná verze), vrátí původní titulky a napíše to do hlášení,
+     hlášení zůstane otevřené pro správce.
+3. Vlastní titulky bez označení jazyka doplněk nikdy nemění. Každé hlášení se zpracuje jen jednou.
+
+Kdo Seerr nemá, nechá volbu vypnutou – úloha pak nic nedělá.

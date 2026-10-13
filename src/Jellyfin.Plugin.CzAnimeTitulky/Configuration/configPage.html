@@ -142,6 +142,26 @@
                 </div>
 
                 <div class="verticalSection">
+                    <h3 class="sectionTitle">Hlášení z Jellyseerr / Overseerr (volitelné)</h3>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label><input is="emby-checkbox" type="checkbox" id="SeerrEnabled"><span>Řešit hlášení „Titulky“</span></label>
+                        <div class="fieldDescription checkboxFieldDescription">Když divák v Seerru nahlásí problém s titulky, doplněk (každých 15 minut, úloha „Hlášení titulků z Jellyseerr“)
+                            odloží současné titulky, stáhne jinou verzi nebo je znovu srovná a odpoví v hlášení. Když nic lepšího není, vrátí původní titulky.
+                            Vlastní titulky bez označení jazyka nikdy nemění. Kdo Seerr nemá, nechá vypnuté.</div>
+                    </div>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="SeerrUrl" label="Adresa Seerru (např. http://192.168.1.20:5055)"></div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="SeerrApiKey" label="API klíč">
+                        <div class="fieldDescription">Seerr → Nastavení → Obecné → API klíč.</div>
+                    </div>
+                    <div class="checkboxContainer">
+                        <label><input is="emby-checkbox" type="checkbox" id="SeerrResolve"><span>Po výměně titulků označit hlášení jako vyřešené</span></label>
+                    </div>
+                    <button is="emby-button" type="button" id="SeerrTest" class="raised button-alt block"><span>Vyzkoušet spojení se Seerrem</span></button>
+                    <div id="SeerrTestResult" class="fieldDescription"></div>
+                </div>
+
+                <div class="verticalSection">
                     <h3 class="sectionTitle">Ostatní</h3>
                     <div class="inputContainer">
                         <input is="emby-input" type="text" id="ExcludedSeriesRegex" label="Vynechat seriály (regulární výraz)">
@@ -175,10 +195,10 @@
         (function () {
             var pluginId = '0b105cb3-606c-41f3-9a2b-a5c759d4d959';
             var text = ['HiyoriUsername', 'HiyoriPassword', 'HnsEmail', 'HnsPassword', 'KamuiUsername', 'KamuiPassword',
-                'WosirUsername', 'WosirPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath', 'AiLocalUrl', 'AiLocalKey'];
+                'WosirUsername', 'WosirPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath', 'AiLocalUrl', 'AiLocalKey', 'SeerrUrl', 'SeerrApiKey'];
             var num = ['MaxOffsetSeconds', 'CacheHours', 'RequestDelayMs', 'DailyRequestLimit', 'RetryRejectedDays', 'AiDailyEpisodes', 'AiChunkLines'];
             var dec = ['AiMonthlyLimitUsd'];
-            var bool = ['SlovakFallback', 'MarkAsDefault', 'EnableReferenceSync', 'EnableAudioSync', 'SaveUnverified', 'SkipIfSidecarExists', 'AiEnabled', 'LocalFirst', 'AiAutomatic'];
+            var bool = ['SlovakFallback', 'MarkAsDefault', 'EnableReferenceSync', 'EnableAudioSync', 'SaveUnverified', 'SkipIfSidecarExists', 'AiEnabled', 'LocalFirst', 'AiAutomatic', 'SeerrEnabled', 'SeerrResolve'];
             var page = document.querySelector('#CzAnimeTitulkyConfigPage');
             function el(id) { return page.querySelector('#' + id); }
 
@@ -270,6 +290,13 @@
                     if (!el('AiModel').value && r.models.length) { el('AiModel').value = r.models[0]; }
                     el('LocalModelsResult').textContent = r.models.length ? ('Modely: ' + r.models.join(', ') + ' – vyber v poli Model.') : 'Server neodpověděl žádným modelem.';
                 }, function () { el('LocalModelsResult').textContent = 'Server nedostupný.'; });
+            });
+
+            el('SeerrTest').addEventListener('click', function () {
+                el('SeerrTestResult').textContent = 'Ukládám nastavení a zkouším spojení…';
+                save().then(function () { return api('POST', 'CzAnimeTitulky/Seerr/Test'); }).then(function (r) {
+                    el('SeerrTestResult').textContent = r.ok ? ('OK – otevřených hlášení: ' + r.open) : ('CHYBA: ' + r.error);
+                }, function () { el('SeerrTestResult').textContent = 'Test selhal.'; });
             });
 
             el('TestAi').addEventListener('click', function () {

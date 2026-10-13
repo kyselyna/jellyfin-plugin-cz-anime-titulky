@@ -39,6 +39,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
     private readonly ILogger<CzAnimeSubtitleProvider> _logger;
     private const string NothingDownloaded = "nothing downloaded";
     private readonly JsonCache<string> _rejected = new("rejected");
+    private readonly JsonCache<SavedVersion> _saved = new("saved");
 
     public CzAnimeSubtitleProvider(
         ILibraryManager library,
@@ -252,6 +253,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             ActivityLog.Write($"ULOŽENO  {Describe(video)}: {lang.ToUpperInvariant()} {c.G} [{c.R}] z {c.K}, časování: {outcome}");
             RemoveAiSidecars(video?.Path); // a real fansub replaces the AI translation
             VerifySavedLater(video, lang);
+            _saved.Set(ticket.V.ToString("N"), new SavedVersion { Key = RejectKey(ticket.V, c), Text = $"{lang.ToUpperInvariant()} {c.G} [{c.R}] z {c.K}, časování: {outcome}" });
             return new SubtitleResponse
             {
                 Format = doc.Format,
@@ -340,6 +342,72 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             Stream = new MemoryStream(src.Doc.ToUtf8()),
         };
     }
+
+    /// <summary>Which version the plugin saved for a video (to exclude it when someone reports it as wrong).</summary>
+    public sealed class SavedVersion
+    {
+        public string Key { get; set; } = string.Empty;
+
+        public string Text { get; set; } = string.Empty;
+    }
+
+    /// <summary>Description of what the plugin last saved for this video, if anything.</summary>
+    public string? SavedText(Guid video) => _saved.TryGet(video.ToString("N"), TimeSpan.FromDays(3650), out var v) ? v?.Text : null;
+
+    /// <summary>
+    /// A viewer reported the subtitles as wrong: exclude the version the plugin saved and move the plugin-style
+    /// sidecars (".cs.default.ass", ".sk.srt"…) aside as "*.nahlaseno" so a new search can replace them.
+    /// The viewer's own untagged files are never touched. Returns the backups (for restore / delete).
+    /// </summary>
+    public List<string> SetAsideReported(Video video, string reason)
+    {
+        if (_saved.TryGet(video.Id.ToString("N"), TimeSpan.FromDays(3650), out var v) && v is not null)
+        {
+            _rejected.Set(v.Key, "nahlášeno: " + reason);
+        }
+
+        var moved = new List<string>();
+        if (video.Path is null)
+        {
+            return moved;
+        }
+
+        var stem = Path.GetFileNameWithoutExtension(video.Path);
+        foreach (var f in Directory.EnumerateFiles(Path.GetDirectoryName(video.Path)!, stem + ".*"))
+        {
+            var rest = Path.GetFileName(f)[stem.Length..].ToLowerInvariant();
+            if (ReportableSidecar().IsMatch(rest))
+            {
+                File.Move(f, f + ".nahlaseno", true);
+                moved.Add(f + ".nahlaseno");
+            }
+        }
+
+        return moved;
+    }
+
+    public static void RestoreReported(IEnumerable<string> backups)
+    {
+        foreach (var b in backups)
+        {
+            var original = b[..^".nahlaseno".Length];
+            if (!File.Exists(original))
+            {
+                File.Move(b, original);
+            }
+        }
+    }
+
+    public static void DeleteReported(IEnumerable<string> backups)
+    {
+        foreach (var b in backups)
+        {
+            File.Delete(b);
+        }
+    }
+
+    [GeneratedRegex(@"^\.(cs|cze|ces|sk|slo|slk)(\.ai)?(\.default)?(\.\d+)?\.(ass|ssa|srt)$")]
+    private static partial Regex ReportableSidecar();
 
     private static void RemoveAiSidecars(string? mediaPath)
     {

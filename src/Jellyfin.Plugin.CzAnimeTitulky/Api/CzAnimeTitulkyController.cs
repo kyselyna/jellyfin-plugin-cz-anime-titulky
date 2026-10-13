@@ -93,6 +93,20 @@ public class CzAnimeTitulkyController : ControllerBase
         backend = Plugin.Instance?.Configuration.AiBackend,
     });
 
+    /// <summary>Connection test for Jellyseerr / Overseerr (number of open issues).</summary>
+    [HttpPost("Seerr/Test")]
+    public async Task<ActionResult<object>> SeerrTest(CancellationToken ct)
+    {
+        try
+        {
+            return Ok(new { ok = true, open = await new Integrations.SeerrClient().OpenCountAsync(ct).ConfigureAwait(false) });
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return Ok(new { ok = false, open = 0, error = ex.Message });
+        }
+    }
+
     /// <summary>Models available on the configured local AI server.</summary>
     [HttpGet("LocalModels")]
     public async Task<ActionResult<object>> LocalModels(CancellationToken ct)

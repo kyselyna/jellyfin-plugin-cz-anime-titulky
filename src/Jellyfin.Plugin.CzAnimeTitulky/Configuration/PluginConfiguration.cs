@@ -96,6 +96,20 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>API backends: stop translating when the estimated cost this month reaches this many USD (0 = no limit).</summary>
     public double AiMonthlyLimitUsd { get; set; } = 2;
 
+    // --- Jellyseerr / Overseerr ---------------------------------------------
+
+    /// <summary>Handle "subtitles" issues reported in Jellyseerr/Overseerr: fetch another version and answer the issue.</summary>
+    public bool SeerrEnabled { get; set; }
+
+    /// <summary>Address of Jellyseerr/Overseerr, e.g. "http://192.168.1.20:5055".</summary>
+    public string SeerrUrl { get; set; } = string.Empty;
+
+    /// <summary>API key (Seerr → Settings → General).</summary>
+    public string SeerrApiKey { get; set; } = string.Empty;
+
+    /// <summary>Mark the issue as resolved when new subtitles were saved for every reported episode.</summary>
+    public bool SeerrResolve { get; set; } = true;
+
     // --- Behaviour -----------------------------------------------------------
 
     /// <summary>Regex of series names to ignore (e.g. Czech dub or hardsubs).</summary>
