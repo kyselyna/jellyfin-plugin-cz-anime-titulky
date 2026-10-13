@@ -43,7 +43,7 @@ public sealed class AiBackend
     /// <summary>Price in USD per 1M tokens (input, output) for cost tracking; unknown models count as the dearest.</summary>
     public static (double In, double Out) Price(string backend, string model)
     {
-        if (backend == "claude-cli")
+        if (backend is "claude-cli" or "local")
         {
             return (0, 0);
         }
@@ -66,6 +66,7 @@ public sealed class AiBackend
     {
         "openai-api" => string.IsNullOrWhiteSpace(Config.AiModel) ? "gpt-5-mini" : Config.AiModel.Trim(),
         "anthropic-api" => string.IsNullOrWhiteSpace(Config.AiModel) ? "claude-sonnet-5-5" : Config.AiModel.Trim(),
+        "local" => Config.AiModel.Trim(),
         _ => string.IsNullOrWhiteSpace(Config.AiModel) ? "sonnet" : Config.AiModel.Trim(),
     };
 
@@ -73,6 +74,7 @@ public sealed class AiBackend
     {
         "anthropic-api" => "Claude API",
         "openai-api" => "OpenAI API",
+        "local" => "lokální AI",
         _ => "Claude (Claude Code)",
     };
 
@@ -80,6 +82,7 @@ public sealed class AiBackend
     {
         "anthropic-api" => AnthropicApiAsync(system, prompt, ct),
         "openai-api" => OpenAiApiAsync(system, prompt, ct),
+        "local" => LocalAsync(system, prompt, ct),
         "claude-cli" => ClaudeCliAsync(system, prompt, ct),
         _ => throw new InvalidOperationException("AI: neznámý překladač " + Config.AiBackend),
     };
@@ -163,6 +166,110 @@ public sealed class AiBackend
         AddUsage((long?)node?["usage"]?["prompt_tokens"] ?? 0, (long?)node?["usage"]?["completion_tokens"] ?? 0);
         return (string?)node?["choices"]?[0]?["message"]?["content"] ?? string.Empty;
     }
+
+    /// <summary>
+    /// Local server. Ollama's own API first (it lets us raise the context window and switch off "thinking");
+    /// a URL ending in /v1, or a server without /api/chat, gets the OpenAI-compatible chat API.
+    /// </summary>
+    private static async Task<string> LocalAsync(string system, string prompt, CancellationToken ct)
+    {
+        var baseUrl = LocalBase(out var openAiStyle);
+        var model = Model();
+        if (string.IsNullOrEmpty(model))
+        {
+            throw new InvalidOperationException("Lokální AI: vyber model (tlačítko Načíst modely).");
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(TimeSpan.FromMinutes(30)); // a big local model on a CPU is slow
+        if (!openAiStyle)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, baseUrl + "/api/chat")
+            {
+                Content = JsonContent.Create(new Dictionary<string, object>
+                {
+                    ["model"] = model,
+                    ["stream"] = false,
+                    ["think"] = false,
+                    ["messages"] = new object[] { new { role = "system", content = system }, new { role = "user", content = prompt } },
+                    ["options"] = new { num_ctx = 16384, temperature = 0.3 },
+                }),
+            };
+            using var resp = await LocalHttp.SendAsync(req, timeout.Token).ConfigureAwait(false);
+            var body = await resp.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false);
+            if (resp.StatusCode != System.Net.HttpStatusCode.NotFound || body.Contains("model", StringComparison.OrdinalIgnoreCase))
+            {
+                var node = JsonNode.Parse(body);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    throw new InvalidOperationException("Lokální AI: " + ((string?)node?["error"] ?? resp.StatusCode.ToString()));
+                }
+
+                return StripThinking((string?)node?["message"]?["content"] ?? string.Empty);
+            }
+        }
+
+        using var req2 = new HttpRequestMessage(HttpMethod.Post, (openAiStyle ? baseUrl : baseUrl + "/v1") + "/chat/completions")
+        {
+            Content = JsonContent.Create(new Dictionary<string, object>
+            {
+                ["model"] = model,
+                ["temperature"] = 0.3,
+                ["messages"] = new object[] { new { role = "system", content = system }, new { role = "user", content = prompt } },
+            }),
+        };
+        if (!string.IsNullOrWhiteSpace(Config.AiToken))
+        {
+            req2.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Config.AiToken.Trim());
+        }
+
+        using var resp2 = await LocalHttp.SendAsync(req2, timeout.Token).ConfigureAwait(false);
+        var n2 = JsonNode.Parse(await resp2.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false));
+        if (!resp2.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException("Lokální AI: " + ((string?)n2?["error"]?["message"] ?? (string?)n2?["error"] ?? resp2.StatusCode.ToString()));
+        }
+
+        return StripThinking((string?)n2?["choices"]?[0]?["message"]?["content"] ?? string.Empty);
+    }
+
+    /// <summary>Models offered by the local server (Ollama /api/tags, else OpenAI /v1/models).</summary>
+    public static async Task<List<string>> LocalModelsAsync(CancellationToken ct)
+    {
+        var baseUrl = LocalBase(out var openAiStyle);
+        if (!openAiStyle)
+        {
+            using var resp = await LocalHttp.GetAsync(baseUrl + "/api/tags", ct).ConfigureAwait(false);
+            if (resp.IsSuccessStatusCode)
+            {
+                var node = JsonNode.Parse(await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
+                return (node?["models"]?.AsArray() ?? new JsonArray()).Select(m => (string?)m?["name"]).OfType<string>().ToList();
+            }
+        }
+
+        using var resp2 = await LocalHttp.GetAsync((openAiStyle ? baseUrl : baseUrl + "/v1") + "/models", ct).ConfigureAwait(false);
+        resp2.EnsureSuccessStatusCode();
+        var n2 = JsonNode.Parse(await resp2.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
+        return (n2?["data"]?.AsArray() ?? new JsonArray()).Select(m => (string?)m?["id"]).OfType<string>().ToList();
+    }
+
+    private static readonly HttpClient LocalHttp = new() { Timeout = Timeout.InfiniteTimeSpan };
+
+    private static string LocalBase(out bool openAiStyle)
+    {
+        var url = Config.AiLocalUrl.Trim().TrimEnd('/');
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var u) || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new InvalidOperationException("Lokální AI: zadej adresu serveru, např. http://192.168.1.50:11434");
+        }
+
+        openAiStyle = u.AbsolutePath.EndsWith("/v1", StringComparison.OrdinalIgnoreCase);
+        return url;
+    }
+
+    /// <summary>Thinking models (Qwen3, DeepSeek-R1…) may put their reasoning before the answer.</summary>
+    private static string StripThinking(string s) =>
+        System.Text.RegularExpressions.Regex.Replace(s, @"<think>.*?</think>", string.Empty, System.Text.RegularExpressions.RegexOptions.Singleline).Trim();
 
     /// <summary>Reasoning models (gpt-5*, o*) think before answering – translation needs little of that.</summary>
     private static Dictionary<string, object> OpenAiBody(string model, string system, string prompt)

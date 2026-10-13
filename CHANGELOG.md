@@ -1,5 +1,12 @@
 # Změny
 
+## 1.7.0 – 2026-10-14
+
+- AI překlad přes **lokální AI**: Ollama (vlastní rozhraní – větší kontext, bez „přemýšlení“) nebo jakýkoli server
+  s OpenAI rozhraním (LM Studio, llama.cpp, vLLM, LocalAI…). V nastavení adresa serveru a tlačítko *Načíst modely*.
+  Menší dávky (≤ 100 řádků), filtr `<think>`, čekání až 30 minut, bez počítání útraty.
+- Nastavení: pole pro Claude a lokální AI se ukazují jen u zvoleného překladače.
+
 ## 1.6.1 – 2026-10-13
 
 - Nový zdroj **web.archive.org**: archivované stránky zaniklých skupin (gawsubs.com, ngfailsub.eu…) – soubor dílu,

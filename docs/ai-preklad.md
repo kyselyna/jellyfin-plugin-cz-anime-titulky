@@ -43,6 +43,7 @@ a nejméně opakovaných pokynů; když odpověď nesedí, doplněk dávku rozd�
 | **Claude – předplatné claude.ai** | tlačítka v nastavení doplňku (bez konzole) | v rámci tvého předplatného Pro/Max |
 | **Claude – API klíč** | API klíč z console.anthropic.com | za použití – Sonnet ≈ 0,10–0,20 $ za díl, Haiku ≈ 0,04 $ |
 | **OpenAI – API klíč** | API klíč z platform.openai.com | za použití – výchozí **gpt-5-mini** ≈ 0,03–0,05 $ za díl, gpt-5 ≈ 0,20–0,30 $ |
+| **Lokální AI** | adresa vlastního serveru (Ollama, LM Studio, llama.cpp, vLLM, LocalAI…) | zdarma – běží na tvém hardwaru |
 
 Ceny jsou orientační pro díl o ~400 řádcích. Modely GPT-5 / o-série „přemýšlejí“ a přemýšlení se platí jako výstup –
 doplněk proto posílá `reasoning_effort: low`. Bez toho stál jeden díl s gpt-5 skoro 0,50 $ a trval 25 minut.
@@ -79,6 +80,41 @@ a token vlož do pole *Token / API klíč*. Totéž jde udělat na jakémkoli ji
 
 Zvol překladač, vlož API klíč do pole *Token / API klíč*, ulož a vyzkoušej. Nic se neinstaluje.
 
+## Nastavení – lokální AI (Ollama a další)
+
+Překlad běží na tvém vlastním serveru – nic se neposílá ven a nic se neplatí.
+
+1. **Server musí být dostupný z Jellyfinu po síti.** Ollama ve výchozím stavu poslouchá jen na `127.0.0.1`;
+   v Dockeru publikuj port `11434` a nastav proměnnou `OLLAMA_HOST=0.0.0.0` (TrueNAS: v nastavení aplikace).
+   Vyzkoušej z počítače: `http://IP-serveru:11434/api/tags` musí vrátit seznam modelů.
+2. V nastavení doplňku zvol **Překladač → Lokální AI** a vyplň **Adresu serveru**:
+   - Ollama: `http://IP:11434`
+   - LM Studio, llama.cpp (`llama-server`), vLLM, LocalAI…: adresa jejich OpenAI rozhraní končící `/v1`,
+     např. `http://IP:1234/v1` (LM Studio), `http://IP:8080/v1` (llama.cpp), `http://IP:8000/v1` (vLLM).
+3. **Načíst modely** → vyber model v poli *Model* → **Uložit** → **Vyzkoušet AI překlad**.
+4. Pole *Token / API klíč* nech prázdné (vyplň jen, když tvůj server klíč vyžaduje).
+
+**Jak doplněk s lokální AI pracuje:**
+- u Ollamy používá její vlastní rozhraní: zvětší kontextové okno na 16 384 tokenů (výchozí 2–4 tisíce by se
+  nevešlo) a vypne „přemýšlení“ (`think: false`) – u Qwen3 to výrazně zrychlí překlad; jinak OpenAI rozhraní;
+- posílá menší dávky (nejvýš 100 řádků) – lokální modely mají menší okno a menší odpovědi se méně rozbijí;
+- případné `<think>…</think>` v odpovědi odfiltruje;
+- na odpověď čeká až 30 minut (velký model na procesoru je pomalý); stále jen jeden překlad najednou;
+- měsíční limit útraty se nepočítá (je to zdarma), denní limit dílů platí.
+
+**Který model:**
+
+| Model | Hodnocení |
+|---|---|
+| `qwen3:30b` (30B-A3B, MoE) | **doporučený** – dobrá čeština, a protože při odpovědi počítá jen ~3 mld. parametrů, je rychlý; potřebuje ~20 GB (VRAM + RAM) |
+| `qwen3:14b` | dobrý, menší (~10 GB); bez grafické karty pomalejší než 30b-A3B |
+| `gemma3:27b`, `mistral-small:24b` | dobrá čeština, alternativa |
+| modely < 10 mld. (`llama3.1:8b`, `qwen3:8b`…) | čeština s chybami – jen pro nouzi |
+| `*-coder` (např. `qwen3-coder:30b`) | **nevhodné** – trénované na programování, ne na přirozený jazyk |
+
+Kvalita lokálních modelů je obvykle o něco horší než gpt-5-mini, ale zdarma a soukromě.
+Rychlost: s grafickou kartou jednotky minut na díl, jen na procesoru i desítky minut.
+
 ## Proč OpenAI jen přes API (a ne přes předplatné ChatGPT)
 
 Předplatné ChatGPT jde z programu použít jen přes **Codex CLI**. Codex je ale programovací agent, který **vždy umí
@@ -98,6 +134,7 @@ které pak vidí všichni diváci. Proto doplněk Codex nepoužívá.
 
 - text titulků je pro AI jen data (výslovně v zadání) a výstup se přijme jen jako JSON pole se stejným počtem řádků;
 - Claude Code běží bez nástrojů (viz výše); token je jen v nastavení Jellyfinu na serveru;
+- lokální AI dostává jen text titulků; adresu serveru zadává správce Jellyfinu (jen http/https);
 - id výsledků jsou podepsaná klíčem serveru, takže překlad nejde vyvolat podvrženým odkazem.
 
 ## Kvalita

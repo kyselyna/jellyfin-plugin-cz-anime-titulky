@@ -93,6 +93,20 @@ public class CzAnimeTitulkyController : ControllerBase
         backend = Plugin.Instance?.Configuration.AiBackend,
     });
 
+    /// <summary>Models available on the configured local AI server.</summary>
+    [HttpGet("LocalModels")]
+    public async Task<ActionResult<object>> LocalModels(CancellationToken ct)
+    {
+        try
+        {
+            return Ok(new { ok = true, models = await Translation.AiBackend.LocalModelsAsync(ct).ConfigureAwait(false) });
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return Ok(new { ok = false, models = Array.Empty<string>(), error = ex.Message });
+        }
+    }
+
     /// <summary>Translates two test lines with the configured AI backend.</summary>
     [HttpPost("TestAi")]
     public async Task<ActionResult<object>> TestAi(CancellationToken ct)

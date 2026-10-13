@@ -87,6 +87,10 @@ public sealed partial class SubtitleTranslator
                 .ToList();
             var done = new List<(string Src, string Cs)>();
             var chunk = Math.Clamp(Plugin.Instance?.Configuration.AiChunkLines ?? 150, 20, 2000);
+            if (Plugin.Instance?.Configuration.AiBackend == "local")
+            {
+                chunk = Math.Min(chunk, 100); // local models: small context window, and smaller answers break less
+            }
             for (var start = 0; start < items.Count; start += chunk)
             {
                 var part = items.Skip(start).Take(chunk).ToList();

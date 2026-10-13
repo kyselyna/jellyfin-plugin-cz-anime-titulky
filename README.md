@@ -21,7 +21,7 @@ Chová se jako běžný poskytovatel titulků (stejně jako OpenSubtitles):
 | **Jazyk** | pozná češtinu a slovenštinu podle textu (štítky na webech občas nesedí), vstup v UTF-8, UTF-16 i Windows-1250 |
 | **Časování** | 1) podle anglických titulků ve videu (globální posun, kontrola po částech, jiný střih po částech, jiná snímková frekvence), 2) když video titulky nemá, podle zvuku (detekce řeči + korelace) |
 | **Uložení** | `video.cs.default.ass` / `video.sk.default.ass` vedle videa – přehrávače je zapnou samy |
-| **AI překlad** | volitelně: když fansub nikde není, přeloží titulky z videa do češtiny – Claude (předplatné claude.ai nebo API) nebo OpenAI (API, doporučeno gpt-5-mini ≈ 0,02 $ za díl) – [docs/ai-preklad.md](docs/ai-preklad.md) |
+| **AI překlad** | volitelně: když fansub nikde není, přeloží titulky z videa do češtiny – Claude (předplatné claude.ai nebo API), OpenAI (API, doporučeno gpt-5-mini ≈ 0,02 $ za díl) nebo lokální AI zdarma (Ollama, LM Studio, llama.cpp, vLLM…) – [docs/ai-preklad.md](docs/ai-preklad.md) |
 | **Historie** | stránka nastavení ukazuje, co se kdy hledalo, uložilo a proč něco uloženo nebylo |
 
 ## Rychlý start

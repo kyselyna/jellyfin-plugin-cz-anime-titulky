@@ -94,6 +94,7 @@
                             <option value="claude-cli">Claude – předplatné claude.ai (Claude Code)</option>
                             <option value="anthropic-api">Claude – API klíč (console.anthropic.com)</option>
                             <option value="openai-api">OpenAI – jen API klíč (předplatné ChatGPT nelze bezpečně použít)</option>
+                            <option value="local">Lokální AI – Ollama, LM Studio, llama.cpp, vLLM… (zdarma, na vlastním serveru)</option>
                         </select>
                     </div>
                     <div id="ClaudeBox" style="border:1px solid rgba(128,128,128,.4);border-radius:6px;padding:.8em 1em;margin:1em 0">
@@ -114,7 +115,15 @@
                         <input is="emby-input" type="password" id="AiToken" label="Token / API klíč (vyplní se samo po přihlášení; pro API vlož API klíč)">
                         <div class="fieldDescription">Claude: výstup příkazu <code>claude setup-token</code>. API: API klíč.</div>
                     </div>
-                    <div class="inputContainer"><input is="emby-input" type="text" id="AiModel" label="Model (prázdné = výchozí: Claude sonnet, OpenAI gpt-5-mini)"></div>
+                    <div id="LocalBox" style="border:1px solid rgba(128,128,128,.4);border-radius:6px;padding:.8em 1em;margin:1em 0">
+                        <b>Lokální AI</b>
+                        <div class="inputContainer"><input is="emby-input" type="text" id="AiLocalUrl" label="Adresa serveru (Ollama: http://IP:11434, jiné: http://IP:port/v1)"></div>
+                        <button is="emby-button" type="button" id="LocalModels" class="raised button-alt"><span>Načíst modely</span></button>
+                        <div id="LocalModelsResult" class="fieldDescription"></div>
+                        <div class="fieldDescription">Ollama musí poslouchat v síti (proměnná <code>OLLAMA_HOST=0.0.0.0</code>). API klíč většinou není potřeba – pole Token nech prázdné.
+                            Doporučení: model aspoň ~14 mld. parametrů, např. <code>qwen3:30b</code>; modely na programování (…-coder) na překlad nejsou. Viz dokumentace AI překladu.</div>
+                    </div>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="AiModel" list="AiModelList" label="Model (prázdné = výchozí: Claude sonnet, OpenAI gpt-5-mini; lokální AI: vyber po Načíst modely)"><datalist id="AiModelList"></datalist></div>
                     <div class="inputContainer"><input is="emby-input" type="text" id="AiCliPath" label="Cesta k programu claude (prázdné = z PATH)"></div>
                     <div class="inputContainer">
                         <input is="emby-input" type="number" id="AiDailyEpisodes" min="0" max="1000" label="Nejvíc přeložených dílů za den (0 = bez limitu)">
@@ -165,7 +174,7 @@
         (function () {
             var pluginId = '0b105cb3-606c-41f3-9a2b-a5c759d4d959';
             var text = ['HiyoriUsername', 'HiyoriPassword', 'HnsEmail', 'HnsPassword', 'KamuiUsername', 'KamuiPassword',
-                'WosirUsername', 'WosirPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath'];
+                'WosirUsername', 'WosirPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath', 'AiLocalUrl'];
             var num = ['MaxOffsetSeconds', 'CacheHours', 'RequestDelayMs', 'DailyRequestLimit', 'RetryRejectedDays', 'AiDailyEpisodes', 'AiChunkLines'];
             var dec = ['AiMonthlyLimitUsd'];
             var bool = ['SlovakFallback', 'MarkAsDefault', 'EnableReferenceSync', 'EnableAudioSync', 'SaveUnverified', 'SkipIfSidecarExists', 'AiEnabled', 'LocalFirst', 'AiAutomatic'];
@@ -179,6 +188,7 @@
                     num.forEach(function (k) { el(k).value = c[k]; });
                     dec.forEach(function (k) { el(k).value = c[k]; });
                     bool.forEach(function (k) { el(k).checked = !!c[k]; });
+                    boxes();
                     Dashboard.hideLoadingMsg();
                     ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl('CzAnimeTitulky/AiUsage'), dataType: 'json' }).then(function (u) {
                         el('AiSpent').textContent = 'Utraceno tento měsíc (odhad): ' + u.spent.toFixed(2) + ' $ z ' + (u.limit > 0 ? u.limit + ' $' : 'bez limitu') + ' · model ' + u.model;
@@ -214,6 +224,12 @@
                 if (st.LoginUrl) { el('ClaudeUrl').href = st.LoginUrl; }
             }
             function claudePoll() { api('GET', 'CzAnimeTitulky/Claude').then(claudeShow); }
+            function boxes() {
+                el('LocalBox').style.display = el('AiBackend').value === 'local' ? '' : 'none';
+                el('ClaudeBox').style.display = el('AiBackend').value === 'claude-cli' ? '' : 'none';
+            }
+            el('AiBackend').addEventListener('change', boxes);
+
             function api(method, path) { return ApiClient.ajax({ type: method, url: ApiClient.getUrl(path), dataType: 'json' }); }
             page.addEventListener('pageshow', claudePoll);
             el('ClaudeInstall').addEventListener('click', function () {
@@ -242,6 +258,17 @@
                 save().then(function () { return api('POST', 'CzAnimeTitulky/Local/Scan'); }).then(function (r) {
                     el('LocalResult').innerHTML = '<b>' + r.count + '</b> sérií/sezón ve složkách ' + r.folders.join(', ') + ':<br>' + r.names.map(function (n) { var d = document.createElement('div'); d.textContent = n; return d.innerHTML; }).join(' · ');
                 }, function () { el('LocalResult').textContent = 'Prohledání selhalo.'; });
+            });
+
+            el('LocalModels').addEventListener('click', function () {
+                el('LocalModelsResult').textContent = 'Ukládám nastavení a ptám se serveru…';
+                save().then(function () { return api('GET', 'CzAnimeTitulky/LocalModels'); }).then(function (r) {
+                    if (!r.ok) { el('LocalModelsResult').textContent = 'CHYBA: ' + r.error; return; }
+                    var dl = el('AiModelList'); dl.innerHTML = '';
+                    r.models.forEach(function (m) { var o = document.createElement('option'); o.value = m; dl.appendChild(o); });
+                    if (!el('AiModel').value && r.models.length) { el('AiModel').value = r.models[0]; }
+                    el('LocalModelsResult').textContent = r.models.length ? ('Modely: ' + r.models.join(', ') + ' – vyber v poli Model.') : 'Server neodpověděl žádným modelem.';
+                }, function () { el('LocalModelsResult').textContent = 'Server nedostupný.'; });
             });
 
             el('TestAi').addEventListener('click', function () {

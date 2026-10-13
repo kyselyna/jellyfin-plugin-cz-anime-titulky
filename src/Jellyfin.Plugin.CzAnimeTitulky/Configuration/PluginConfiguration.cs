@@ -72,7 +72,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Lines per AI request (an episode has ~300–500); bigger = more context, fewer requests.</summary>
     public int AiChunkLines { get; set; } = 150;
 
-    /// <summary>claude-cli (Claude Code, claude.ai subscription), anthropic-api, openai-api.</summary>
+    /// <summary>claude-cli (Claude Code, claude.ai subscription), anthropic-api, openai-api, local (Ollama / OpenAI-compatible server).</summary>
     public string AiBackend { get; set; } = "claude-cli";
 
     /// <summary>Model name/alias, empty = backend default (claude-cli: "sonnet").</summary>
@@ -80,6 +80,9 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>claude-cli: long-lived token from "claude setup-token". APIs: the API key.</summary>
     public string AiToken { get; set; } = string.Empty;
+
+    /// <summary>Local AI server, e.g. "http://192.168.1.50:11434" (Ollama) or "http://host:1234/v1" (LM Studio, llama.cpp, vLLM…).</summary>
+    public string AiLocalUrl { get; set; } = string.Empty;
 
     /// <summary>Path of the CLI (claude / codex), empty = from PATH.</summary>
     public string AiCliPath { get; set; } = string.Empty;
