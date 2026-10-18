@@ -1,8 +1,10 @@
+using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.CzAnimeTitulky.Sources;
 using Jellyfin.Plugin.CzAnimeTitulky.Util;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -14,19 +16,22 @@ public sealed record Target(Video Video, string DisplayName, int Episode, Hiyori
 /// <summary>
 /// Maps a Jellyfin episode/movie to the hiyori.cz page of the right season:
 /// series AniList id → AniList TV sequel chain (season N = N-th entry) → hiyori page whose
-/// AniList link equals that id.
+/// AniList link equals that id. When the air date of the episode does not fit that entry (split seasons:
+/// AniList "Part 2" entries count as extra links of the chain), the entry is picked by air date instead.
 /// </summary>
 public sealed class HiyoriResolver
 {
     private readonly AniListClient _aniList;
     private readonly HiyoriClient _hiyori;
+    private readonly ILibraryManager _library;
     private readonly ILogger<HiyoriResolver> _logger;
     private readonly JsonCache<string> _map = new("hiyori-map");
 
-    public HiyoriResolver(AniListClient aniList, HiyoriClient hiyori, ILogger<HiyoriResolver> logger)
+    public HiyoriResolver(AniListClient aniList, HiyoriClient hiyori, ILibraryManager library, ILogger<HiyoriResolver> logger)
     {
         _aniList = aniList;
         _hiyori = hiyori;
+        _library = library;
         _logger = logger;
     }
 
@@ -60,7 +65,7 @@ public sealed class HiyoriResolver
             seasonNo = season;
             episode = ep.IndexNumber.Value;
             name = $"{ep.SeriesName} S{season:00}E{episode:00}";
-            aniId = await SeasonAniListIdAsync(ep, season, ct).ConfigureAwait(false);
+            (aniId, episode) = await SeasonAniListIdAsync(ep, season, episode, ct).ConfigureAwait(false);
         }
         else if (video is Movie movie)
         {
@@ -82,13 +87,14 @@ public sealed class HiyoriResolver
         return (aniId.Value, seasonNo, episode, name);
     }
 
-    private async Task<int?> SeasonAniListIdAsync(Episode ep, int season, CancellationToken ct)
+    /// <summary>AniList id of the entry the episode belongs to and the episode number within that entry.</summary>
+    private async Task<(int? Id, int Episode)> SeasonAniListIdAsync(Episode ep, int season, int episode, CancellationToken ct)
     {
         // A season may carry its own AniList id (AniList plugin / manual identify).
         var own = ParseId(ep.Season?.GetProviderId("AniList"));
         if (own is not null)
         {
-            return own;
+            return (own, episode);
         }
 
         var series = ep.Series;
@@ -100,10 +106,34 @@ public sealed class HiyoriResolver
 
         if (first is null)
         {
-            return null;
+            return (null, episode);
         }
 
-        return (await _aniList.GetSeasonAsync(first.Value, season, ct).ConfigureAwait(false))?.Id;
+        var counted = await _aniList.GetSeasonAsync(first.Value, season, ct).ConfigureAwait(false);
+        if (ep.PremiereDate is not { } air || (counted is not null && (counted.Start is null || counted.Covers(air))))
+        {
+            return (counted?.Id, episode);
+        }
+
+        // N-th season of the chain aired at another time (e.g. Mushoku Tensei: S1 and S2 have a "Part 2" each,
+        // so the 3rd chain entry is season 2) → take the entry that aired when the episode did.
+        var byDate = (await _aniList.GetChainAsync(first.Value, ct).ConfigureAwait(false)).FirstOrDefault(m => m.Covers(air));
+        if (byDate is null)
+        {
+            _logger.LogInformation("{Series} S{Season:00}E{Episode:00}: no AniList entry aired on {Air:yyyy-MM-dd}", ep.SeriesName, season, episode, air);
+            return (null, episode); // better nothing than another season's subtitles
+        }
+
+        // "Part 2" inside one Jellyfin season: its episodes are numbered from 1 again.
+        var before = _library.GetItemList(new InternalItemsQuery
+        {
+            IncludeItemTypes = new[] { BaseItemKind.Episode },
+            AncestorIds = new[] { series!.Id },
+            ParentIndexNumber = season,
+            Recursive = true,
+        }).Count(e => e.IndexNumber is > 0 && e.IndexNumber < episode && e.PremiereDate < byDate.Start!.Value.AddDays(-14));
+        _logger.LogInformation("{Series} S{Season:00}E{Episode:00}: by air date AniList {Id} episode {Number}", ep.SeriesName, season, episode, byDate.Id, episode - before);
+        return (byDate.Id, episode - before);
     }
 
     private async Task<HiyoriAnime?> FindHiyoriAsync(int aniId, bool fresh, CancellationToken ct)

@@ -1,5 +1,14 @@
 # Změny
 
+## 1.8.2 – 2026-10-18
+
+- **Správná sezóna u rozdělených sérií.** AniList vede „Part 2“ jako samostatnou položku, takže N-tá položka
+  řetězce nemusí být N-tá sezóna (Mushoku Tensei: 3. sezóna → plugin hledal titulky ke 2. sezóně). Když datum
+  vysílání dílu neodpovídá, vybere se položka AniListu podle data (u „Part 2“ uvnitř jedné sezóny se díl
+  přečísluje od 1); když nesedí žádná, nenabídne se nic – raději nic než titulky k jiné sezóně.
+- Vlastní sbírka: označení sezóny římskou číslicí i uprostřed názvu („Mushoku Tensei II  Isekai…“).
+- Výsledek hledání ukazuje, ke kterému anime/sezóně titulky jsou („Mushoku Tensei III: … – díl 1 – Hns.sk [SubsPlease]“).
+
 ## 1.8.1 – 2026-10-14
 
 - Vlastní sbírka: párování podle sezóny. Položka s označením sezóny (`-s2`, `Season 2`, `2nd Season`, `II`, `… 2`)

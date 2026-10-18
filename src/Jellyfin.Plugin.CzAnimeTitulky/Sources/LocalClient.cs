@@ -129,8 +129,8 @@ public sealed partial class LocalClient
         return null;
     }
 
-    // "-s2", "S02", "Season 2", "série 2", "2nd Season", "… II", "… 2" at the end
-    [GeneratedRegex(@"(?:^|[\s_\-.\[(])(?:s|season|s[ée]rie|sez[óo]na)\s*0*(\d{1,2})(?=$|[\s_\-.\])])|(\d{1,2})(?:st|nd|rd|th)\s*season|\s(II|III|IV|V)$|[\s\-_](\d)$", RegexOptions.IgnoreCase)]
+    // "-s2", "S02", "Season 2", "série 2", "2nd Season", "… II" (also "Mushoku Tensei II  Isekai…"), "… 2" at the end
+    [GeneratedRegex(@"(?:^|[\s_\-.\[(])(?:s|season|s[ée]rie|sez[óo]na)\s*0*(\d{1,2})(?=$|[\s_\-.\])])|(\d{1,2})(?:st|nd|rd|th)\s*season|\s(II|III|IV)(?=$|[\s:_\-])|\s(V)$|[\s\-_](\d)$", RegexOptions.IgnoreCase)]
     private static partial Regex SeasonInName();
 
     /// <summary>Entry by its index key (from a subtitle id) – paths never come from outside.</summary>

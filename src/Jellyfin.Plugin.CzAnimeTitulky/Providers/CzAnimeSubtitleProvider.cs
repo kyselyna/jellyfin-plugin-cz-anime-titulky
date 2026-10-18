@@ -141,6 +141,9 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
         _logger.LogInformation("{Name}: {Count} candidate(s), best {Group} [{Release}] {Lang}", target.DisplayName, ranked.Count, ranked[0].Row.Group, ranked[0].Row.Release, ranked[0].Row.Lang);
         ActivityLog.Write($"HLEDÁNÍ  {target.DisplayName} ({want}{(request.IsAutomated ? ", automaticky" : string.Empty)}): {ranked.Count}× – nejlepší {ranked[0].Row.Group} [{ranked[0].Row.Release}] {ranked[0].Row.Lang}");
 
+        // Which anime/season the subtitles are for – shown in the app so a wrong season is visible at a glance.
+        var source = target.AniListId > 0 ? (await _aniList.GetAsync(target.AniListId, cancellationToken).ConfigureAwait(false))?.Romaji : null;
+
         if (request.IsAutomated)
         {
             // Skip versions that already failed for this video recently (no daily re-downloads).
@@ -156,10 +159,10 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
 
             // Jellyfin takes only the first result → one result carrying the top three alternatives.
             var top = ranked.Take(3).ToList();
-            return new[] { Info(target, top[0], new Ticket { V = video.Id, A = true, C = top.Select(x => x.Candidate).ToList() }) };
+            return new[] { Info(source, top[0], new Ticket { V = video.Id, A = true, C = top.Select(x => x.Candidate).ToList() }) };
         }
 
-        return ranked.Select(x => Info(target, x, new Ticket { V = video.Id, A = false, C = new() { x.Candidate } })).ToList();
+        return ranked.Select(x => Info(source, x, new Ticket { V = video.Id, A = false, C = new() { x.Candidate } })).ToList();
     }
 
     public async Task<SubtitleResponse> GetSubtitles(string id, CancellationToken cancellationToken)
@@ -644,11 +647,13 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             .ToList();
     }
 
-    private RemoteSubtitleInfo Info(Target t, (HiyoriRow Row, Candidate Candidate) x, Ticket ticket) => new()
+    private RemoteSubtitleInfo Info(string? source, (HiyoriRow Row, Candidate Candidate) x, Ticket ticket) => new()
     {
         Id = ticket.Encode(),
         ProviderName = Name,
-        Name = $"{x.Row.Group} – {x.Row.Release} – díl {x.Row.Episode}",
+        Name = x.Candidate.K == "local" || source is null
+            ? $"{x.Row.Group} – {x.Row.Release} – díl {x.Row.Episode}"
+            : $"{source} – díl {x.Row.Episode} – {x.Row.Group} [{x.Row.Release}]",
         Author = x.Row.Group,
         Comment = $"{x.Row.Lang} · {x.Row.Title} · {x.Row.Version} · {x.Candidate.K}",
         ThreeLetterISOLanguageName = x.Row.Lang == "SK" ? "slo" : "cze",

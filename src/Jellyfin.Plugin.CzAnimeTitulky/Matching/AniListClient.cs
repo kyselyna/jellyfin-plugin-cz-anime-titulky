@@ -27,6 +27,26 @@ public sealed class AniMedia
     /// <summary>Sequel that is not a TV season (special, OVA, movie) – the chain may continue behind it.</summary>
     public int? BridgeId { get; set; }
 
+    /// <summary>First and last air date (UTC midnight), when AniList knows the full date.</summary>
+    public DateTime? Start { get; set; }
+
+    public DateTime? End { get; set; }
+
+    /// <summary>
+    /// True when an episode aired on <paramref name="air"/> belongs to this entry (a few weeks of slack for
+    /// time zones and simulcast delays). Unknown start date → false.
+    /// </summary>
+    public bool Covers(DateTime air)
+    {
+        if (Start is null)
+        {
+            return false;
+        }
+
+        var end = End ?? Start.Value.AddDays(((Episodes ?? 26) * 7) + 14);
+        return air >= Start.Value.AddDays(-14) && air <= end.AddDays(30);
+    }
+
     public IEnumerable<string> Titles() =>
         new[] { Romaji, English }.Concat(Synonyms.Take(3)).Where(t => !string.IsNullOrWhiteSpace(t)).Distinct()!;
 }
@@ -35,7 +55,7 @@ public sealed class AniMedia
 public sealed class AniListClient
 {
     private const string MediaQuery =
-        "query($id:Int){Media(id:$id,type:ANIME){id format episodes title{romaji english} synonyms relations{edges{relationType node{id format type}}}}}";
+        "query($id:Int){Media(id:$id,type:ANIME){id format episodes title{romaji english} synonyms startDate{year month day} endDate{year month day} relations{edges{relationType node{id format type}}}}}";
 
     private const string SearchQuery =
         "query($s:String){Page(perPage:5){media(search:$s,type:ANIME){id}}}";
@@ -44,7 +64,7 @@ public sealed class AniListClient
     private readonly ILogger<AniListClient> _logger;
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly JsonCache<AniMedia> _media = new("anilist-media-v2");
+    private readonly JsonCache<AniMedia> _media = new("anilist-media-v3");
     private readonly JsonCache<int?> _search = new("anilist-search");
 
     public AniListClient(ILogger<AniListClient> logger)
@@ -74,6 +94,8 @@ public sealed class AniListClient
             Romaji = (string?)m["title"]?["romaji"],
             English = (string?)m["title"]?["english"],
             Synonyms = m["synonyms"]?.AsArray().Select(x => (string?)x).Where(x => x is not null).ToList()! ?? new(),
+            Start = Date(m["startDate"]),
+            End = Date(m["endDate"]),
         };
         foreach (var edge in m["relations"]?["edges"]?.AsArray() ?? new JsonArray())
         {
@@ -119,6 +141,33 @@ public sealed class AniListClient
         }
 
         return null;
+    }
+
+    /// <summary>All TV entries of the sequel chain starting at <paramref name="firstId"/> (at most 20).</summary>
+    public async Task<List<AniMedia>> GetChainAsync(int firstId, CancellationToken ct)
+    {
+        var chain = new List<AniMedia>();
+        var seen = new HashSet<int>();
+        int? cur = firstId;
+        while (cur is not null && seen.Add(cur.Value) && chain.Count < 20)
+        {
+            var m = await GetAsync(cur.Value, ct).ConfigureAwait(false);
+            if (m is null)
+            {
+                break;
+            }
+
+            chain.Add(m);
+            cur = m.SequelId ?? await NextSeasonBehindBridgeAsync(m, seen, ct).ConfigureAwait(false);
+        }
+
+        return chain;
+    }
+
+    private static DateTime? Date(JsonNode? d)
+    {
+        var (y, mo, day) = ((int?)d?["year"], (int?)d?["month"], (int?)d?["day"]);
+        return y is null || mo is null || day is null ? null : new DateTime(y.Value, mo.Value, day.Value, 0, 0, 0, DateTimeKind.Utc);
     }
 
     /// <summary>
