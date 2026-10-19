@@ -7,14 +7,17 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.CzAnimeTitulky.Sources;
 
 /// <summary>
-/// HannyaSubs (hannya-subs.blogspot.com). A project post links every episode as a public
+/// HannyaSubs. Old projects: hannya-subs.blogspot.com – a project post links every episode as a public
 /// "https://mega.nz/file/&lt;id&gt;#&lt;key&gt;" in episode order. MEGA files are AES-128-CTR encrypted with the
 /// key from the link; the encrypted attributes carry the file name, which is used to confirm the
 /// episode number before the file itself is downloaded. No login needed.
+/// New projects (10/2026): www.hannya-subs.cz – anime page "/anime/&lt;slug&gt;" lists "/anime/&lt;slug&gt;/epizoda-N";
+/// the episode page links the current version as "/soubory/subtitles/…" (logged-in users only).
 /// </summary>
 public sealed partial class HannyaClient : SiteClient
 {
     private const string MegaApi = "https://g.api.mega.co.nz/cs";
+    private const string Base = "https://www.hannya-subs.cz";
 
     public HannyaClient(ILogger<HannyaClient> logger)
         : base(logger)
@@ -23,12 +26,34 @@ public sealed partial class HannyaClient : SiteClient
 
     public override string Name => "hannya-subs";
 
-    protected override (string User, string Password) Credentials => ("-", "-");
+    protected override (string User, string Password) Credentials => (Config.HannyaUsername, Config.HannyaPassword);
 
-    protected override Task<bool> LoginAsync(CancellationToken ct) => Task.FromResult(true);
+    protected override async Task<bool> LoginAsync(CancellationToken ct)
+    {
+        var (html, _) = await GetHtmlAsync(Base + "/login", ct).ConfigureAwait(false);
+        var form = Parse(html).QuerySelector("form[action='/login']");
+        if (form is null)
+        {
+            return false;
+        }
+
+        var fields = FormFields(form);
+        Set(fields, "username", Credentials.User);
+        Set(fields, "password", Credentials.Password);
+        Set(fields, "remember_me", "on");
+        Set(fields, "redirect", "/");
+        var (resp, uri) = await PostFormAsync(Base + "/login", fields, ct).ConfigureAwait(false);
+        return !uri.AbsolutePath.StartsWith("/login", StringComparison.OrdinalIgnoreCase)
+            && resp.Contains("logout", StringComparison.OrdinalIgnoreCase);
+    }
 
     public async Task<Payload?> DownloadAsync(string url, int episode, CancellationToken ct)
     {
+        if (IsOnHost(url, "hannya-subs.cz"))
+        {
+            return await DownloadSiteAsync(url, episode, ct).ConfigureAwait(false);
+        }
+
         if (!IsOnHost(url, "hannya-subs.blogspot.com"))
         {
             return null;
@@ -59,6 +84,45 @@ public sealed partial class HannyaClient : SiteClient
             }
 
             index += episode - n.Value;
+        }
+
+        return null;
+    }
+
+    private async Task<Payload?> DownloadSiteAsync(string url, int episode, CancellationToken ct)
+    {
+        var slug = SiteSlug().Match(new Uri(url).AbsolutePath);
+        if (!slug.Success || !await EnsureLoginAsync(ct).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        var anime = Base + "/anime/" + slug.Groups[1].Value;
+        var (html, _) = await GetHtmlAsync(anime, ct).ConfigureAwait(false);
+        var episodePath = SiteEpisode().Matches(html)
+            .Where(m => m.Groups[1].Value == slug.Groups[1].Value && int.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) == episode)
+            .Select(m => m.Value)
+            .FirstOrDefault();
+        if (episodePath is null)
+        {
+            return null;
+        }
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            (html, var final) = await GetHtmlAsync(Base + episodePath, ct).ConfigureAwait(false);
+            var file = Parse(html).QuerySelector("a.dl-btn[href^='/soubory/']")?.GetAttribute("href");
+            if (file is not null)
+            {
+                return await DownloadGetAsync(Base + file, ct).ConfigureAwait(false);
+            }
+
+            // Session expired → the download button points to the login page; log in again once.
+            if (attempt > 0 || !(final.AbsolutePath.StartsWith("/login", StringComparison.OrdinalIgnoreCase) || html.Contains("/login?redirect", StringComparison.Ordinal))
+                || !await EnsureLoginAsync(ct, force: true).ConfigureAwait(false))
+            {
+                return null;
+            }
         }
 
         return null;
@@ -182,6 +246,12 @@ public sealed partial class HannyaClient : SiteClient
         s = s.Replace('-', '+').Replace('_', '/').Replace(",", string.Empty, StringComparison.Ordinal);
         return Convert.FromBase64String(s.PadRight(s.Length + ((4 - (s.Length % 4)) % 4), '='));
     }
+
+    [GeneratedRegex(@"^/anime/([a-z0-9-]+)")]
+    private static partial Regex SiteSlug();
+
+    [GeneratedRegex(@"/anime/([a-z0-9-]+)/epizoda-0*(\d+)(?=[""#?])")]
+    private static partial Regex SiteEpisode();
 
     [GeneratedRegex(@"https://mega\.nz/file/([A-Za-z0-9_-]{8})#([A-Za-z0-9_-]{43})")]
     private static partial Regex MegaLink();

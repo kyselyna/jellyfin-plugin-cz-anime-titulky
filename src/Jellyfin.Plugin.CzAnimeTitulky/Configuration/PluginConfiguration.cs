@@ -24,6 +24,11 @@ public class PluginConfiguration : BasePluginConfiguration
 
     public string WosirPassword { get; set; } = string.Empty;
 
+    /// <summary>Account on www.hannya-subs.cz (HannyaSubs' own site since 10/2026; downloads need login).</summary>
+    public string HannyaUsername { get; set; } = string.Empty;
+
+    public string HannyaPassword { get; set; } = string.Empty;
+
     /// <summary>Password for kamui-subs.cz archives (published on their website; also tried for own-collection archives).</summary>
     public string ArchivePassword { get; set; } = string.Empty;
 

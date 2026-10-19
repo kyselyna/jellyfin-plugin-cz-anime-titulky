@@ -11,7 +11,7 @@
             <form id="CzAnimeTitulkyConfigForm">
                 <div class="verticalSection">
                     <h2 class="sectionTitle">CZ Anime Titulky</h2>
-                    <p>České (případně slovenské) fansub titulky k anime z <b>hiyori.cz</b>, <b>hns.sk</b>, <b>kamui-subs.cz</b> a <b>wosir.cz</b>
+                    <p>České (případně slovenské) fansub titulky k anime z <b>hiyori.cz</b>, <b>hns.sk</b>, <b>kamui-subs.cz</b>, <b>wosir.cz</b> a <b>hannya-subs.cz</b>
                         s automatickým srovnáním časování. Po uložení zapni v knihovně anime
                         <i>Stahování titulků → Čeština</i> a dej „CZ Anime Titulky“ na první místo v pořadí stahovačů.</p>
                 </div>
@@ -30,6 +30,8 @@
                     </div>
                     <div class="inputContainer"><input is="emby-input" type="text" id="WosirUsername" label="wosir.cz – přezdívka"></div>
                     <div class="inputContainer"><input is="emby-input" type="password" id="WosirPassword" label="wosir.cz – heslo"></div>
+                    <div class="inputContainer"><input is="emby-input" type="text" id="HannyaUsername" label="hannya-subs.cz – přezdívka nebo e-mail"></div>
+                    <div class="inputContainer"><input is="emby-input" type="password" id="HannyaPassword" label="hannya-subs.cz – heslo"></div>
                     <button is="emby-button" type="button" id="TestLogins" class="raised button-alt block"><span>Vyzkoušet přihlášení</span></button>
                     <div id="TestResult" class="fieldDescription"></div>
                 </div>
@@ -195,7 +197,7 @@
         (function () {
             var pluginId = '0b105cb3-606c-41f3-9a2b-a5c759d4d959';
             var text = ['HiyoriUsername', 'HiyoriPassword', 'HnsEmail', 'HnsPassword', 'KamuiUsername', 'KamuiPassword',
-                'WosirUsername', 'WosirPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath', 'AiLocalUrl', 'AiLocalKey', 'SeerrUrl', 'SeerrApiKey'];
+                'WosirUsername', 'WosirPassword', 'HannyaUsername', 'HannyaPassword', 'ArchivePassword', 'ExcludedSeriesRegex', 'LocalFolders', 'AiBackend', 'AiToken', 'AiModel', 'AiCliPath', 'AiLocalUrl', 'AiLocalKey', 'SeerrUrl', 'SeerrApiKey'];
             var num = ['MaxOffsetSeconds', 'CacheHours', 'RequestDelayMs', 'DailyRequestLimit', 'RetryRejectedDays', 'AiDailyEpisodes', 'AiChunkLines'];
             var dec = ['AiMonthlyLimitUsd'];
             var bool = ['SlovakFallback', 'MarkAsDefault', 'EnableReferenceSync', 'EnableAudioSync', 'SaveUnverified', 'SkipIfSidecarExists', 'AiEnabled', 'LocalFirst', 'AiAutomatic', 'SeerrEnabled', 'SeerrResolve'];

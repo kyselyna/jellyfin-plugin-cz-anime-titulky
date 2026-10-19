@@ -128,12 +128,17 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             }
         }
 
+        // Subtitles that exist but sit on a site the plugin cannot download from (login behind a captcha, unknown site).
+        var manual = target is null ? new List<(HiyoriRow Row, Candidate Candidate)>() : Unsupported(target);
         if (ranked.Count == 0)
         {
             ActivityLog.Write(target is null
                 ? $"NENALEZENO {Describe(video)}: anime není na hiyori.cz (nebo chybí AniList id) ani ve vlastní sbírce"
-                : $"NENALEZENO {Describe(video)}: díl {target.Episode} nemá {want} titulky na podporovaném webu (hiyori {target.Anime.Path}, CZ/SK řádků celkem {target.Anime.Rows.Count(r => r.Lang is "CZ" or "SK")}) ani ve vlastní sbírce");
-            return AiOffer(video, want, request.IsAutomated, sidecar);
+                : manual.Count > 0
+                    ? $"RUČNĚ     {Describe(video)}: titulky k dílu {target.Episode} existují, ale jen na webu, odkud je plugin neumí stáhnout ({string.Join(", ", manual.Select(m => Host(m.Candidate.U)).Distinct())}) – stáhni je ručně a ulož vedle videa"
+                    : $"NENALEZENO {Describe(video)}: díl {target.Episode} nemá {want} titulky na podporovaném webu (hiyori {target.Anime.Path}, CZ/SK řádků celkem {target.Anime.Rows.Count(r => r.Lang is "CZ" or "SK")}) ani ve vlastní sbírce");
+            var ai = AiOffer(video, want, request.IsAutomated, sidecar);
+            return request.IsAutomated ? ai : ai.Concat(manual.Select(m => ManualInfo(m, video.Id))).ToList();
         }
 
         target ??= new Target(video, Describe(video), local!.E, new HiyoriAnime(string.Empty, null, Array.Empty<HiyoriRow>(), DateTime.UtcNow), local.A);
@@ -162,8 +167,31 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             return new[] { Info(source, top[0], new Ticket { V = video.Id, A = true, C = top.Select(x => x.Candidate).ToList() }) };
         }
 
-        return ranked.Select(x => Info(source, x, new Ticket { V = video.Id, A = false, C = new() { x.Candidate } })).ToList();
+        return ranked.Select(x => Info(source, x, new Ticket { V = video.Id, A = false, C = new() { x.Candidate } }))
+            .Concat(manual.Select(m => ManualInfo(m, video.Id)))
+            .ToList();
     }
+
+    /// <summary>A search result that only tells where the subtitles are; choosing it explains that they must be downloaded by hand.</summary>
+    private RemoteSubtitleInfo ManualInfo((HiyoriRow Row, Candidate Candidate) x, Guid videoId) => new()
+    {
+        Id = new Ticket { V = videoId, A = false, C = new() { x.Candidate } }.Encode(),
+        ProviderName = Name,
+        Name = $"⚠ Nelze stáhnout automaticky – stáhni ručně z {Host(x.Candidate.U)}: díl {x.Row.Episode} – {x.Row.Group} [{x.Row.Release}]",
+        Author = x.Row.Group,
+        Comment = $"{x.Row.Lang} · titulky existují, ale plugin je z tohoto webu neumí stáhnout · {x.Candidate.U}",
+        ThreeLetterISOLanguageName = x.Row.Lang == "SK" ? "slo" : "cze",
+        Format = "ass",
+    };
+
+    private List<(HiyoriRow Row, Candidate Candidate)> Unsupported(Target t) => t.Anime.Rows
+        .Where(r => r.Lang is "CZ" or "SK" && Kind(r.Url) is null && r.Url is not null && Uri.TryCreate(r.Url, UriKind.Absolute, out var u)
+            && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp)
+            && (ExactEpisode(r.Episode) == t.Episode || InRange(r.Episode, t.Episode)))
+        .Select(r => (r, new Candidate { U = r.Url!, K = "manual", E = t.Episode, L = r.Lang, G = r.Group, R = r.Release, A = t.AniListId }))
+        .ToList();
+
+    private static string Host(string url) => Uri.TryCreate(url, UriKind.Absolute, out var u) ? u.Host.Replace("www.", string.Empty, StringComparison.OrdinalIgnoreCase) : url;
 
     public async Task<SubtitleResponse> GetSubtitles(string id, CancellationToken cancellationToken)
     {
@@ -182,6 +210,12 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
 
         foreach (var c in ticket.C.Take(3))
         {
+            if (c.K == "manual")
+            {
+                ActivityLog.Write($"RUČNĚ     {(video is null ? "?" : Describe(video))}: {c.G} – titulky jsou na {c.U}, plugin je odtud neumí stáhnout – stáhni je ručně a ulož vedle videa");
+                throw new InvalidOperationException($"CZ Anime Titulky: tyto titulky nelze stáhnout automaticky – stáhni je ručně z {c.U}");
+            }
+
             // The id arrives through the API – accept only links the site client itself would produce.
             if (Kind(c.U) != c.K)
             {
@@ -737,7 +771,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             return "ange";
         }
 
-        if (SiteClient.IsOnHost(url, "hannya-subs.blogspot.com"))
+        if (SiteClient.IsOnHost(url, "hannya-subs.blogspot.com") || SiteClient.IsOnHost(url, "hannya-subs.cz"))
         {
             return "hannya";
         }

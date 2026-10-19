@@ -1,5 +1,15 @@
 # Změny
 
+## 1.8.4 – 2026-10-19
+
+- **Nový web HannyaSubs – [hannya-subs.cz](https://www.hannya-subs.cz).** HannyaSubs nově vydávají na vlastním webu
+  (staré projekty zůstávají na blogspotu/mega.nz). Stahování vyžaduje účet – v nastavení přibyla pole
+  „hannya-subs.cz – přezdívka / heslo“ (bez účtu se web přeskočí).
+- **Titulky, které plugin neumí stáhnout.** Když jsou titulky k dílu jen na webu, odkud je stáhnout nejde (např.
+  animetitulky.com – přihlášení chrání reCAPTCHA), historie napíše „RUČNĚ … stáhni je ručně a ulož vedle videa“
+  místo „nemá titulky“. Při ručním hledání se takové titulky ukážou jako položka „⚠ Nelze stáhnout automaticky –
+  stáhni ručně z …“ s odkazem; jejím výběrem se nic nestáhne, jen se vypíše, kde titulky jsou.
+
 ## 1.8.3 – 2026-10-19
 
 - **Párování s hiyori i přes MyAnimeList.** Některé stránky hiyori.cz odkazují jen na MyAnimeList, ne na AniList

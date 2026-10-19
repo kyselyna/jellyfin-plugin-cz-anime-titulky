@@ -13,7 +13,7 @@ Chová se jako běžný poskytovatel titulků (stejně jako OpenSubtitles):
 
 | | |
 |---|---|
-| **Zdroje** | [hiyori.cz](https://hiyori.cz) (rozcestník + titulky hostované přímo na hiyori), [hns.sk](https://hns.sk), [kamui-subs.cz](https://kamui-subs.cz), [wosir.cz](https://www.wosir.cz), [ange.3mka.cz](https://ange.3mka.cz), [HannyaSubs](https://hannya-subs.blogspot.com) (soubory na mega.nz), archivy zaniklých skupin na [web.archive.org](https://web.archive.org) (gawsubs, ngfailsub…), archiv [TeamNS](https://teamns.gensubs.cz) a přímé odkazy na soubory |
+| **Zdroje** | [hiyori.cz](https://hiyori.cz) (rozcestník + titulky hostované přímo na hiyori), [hns.sk](https://hns.sk), [kamui-subs.cz](https://kamui-subs.cz), [wosir.cz](https://www.wosir.cz), [ange.3mka.cz](https://ange.3mka.cz), [HannyaSubs](https://www.hannya-subs.cz) (nový web s účtem; starší projekty na [blogspotu](https://hannya-subs.blogspot.com) se soubory na mega.nz), archivy zaniklých skupin na [web.archive.org](https://web.archive.org) (gawsubs, ngfailsub…), archiv [TeamNS](https://teamns.gensubs.cz) a přímé odkazy na soubory |
 | **Vlastní sbírka** | složky a archivy s tvými titulky (např. na NAS) jako další zdroj |
 | **Párování** | seriál → AniList id → řetězec pokračování na AniList (sezóna N = N-tý díl řetězce) → stránka na hiyori.cz se stejným AniList id |
 | **Výběr** | čeština před slovenštinou, skupina, která má titulky k co nejvíc dílům sezóny, titulky pro stejný release (skupina v názvu souboru, BD vs. TV), nejvyšší verze |
@@ -50,7 +50,7 @@ Podrobně: [docs/nastaveni.md](docs/nastaveni.md).
 ## Požadavky
 
 - Jellyfin **12.1** nebo novější (.NET 10)
-- účty na hiyori.cz, hns.sk, kamui-subs.cz a wosir.cz (zdarma; bez účtu se daný web přeskočí)
+- účty na hiyori.cz, hns.sk, kamui-subs.cz, wosir.cz a hannya-subs.cz (zdarma; bez účtu se daný web přeskočí)
 
 ## Ohleduplnost k fansub webům
 

@@ -26,9 +26,9 @@ public class CzAnimeTitulkyController : ControllerBase
     private readonly LocalClient _local;
     private readonly Translation.SubtitleTranslator _translator;
 
-    public CzAnimeTitulkyController(HiyoriClient hiyori, HnsClient hns, KamuiClient kamui, WosirClient wosir, ILibraryManager library, ISubtitleManager subtitles, SyncService sync, Translation.AiBackend ai, Translation.ClaudeSetup claude, LocalClient local, Translation.SubtitleTranslator translator)
+    public CzAnimeTitulkyController(HiyoriClient hiyori, HnsClient hns, KamuiClient kamui, WosirClient wosir, HannyaClient hannya, ILibraryManager library, ISubtitleManager subtitles, SyncService sync, Translation.AiBackend ai, Translation.ClaudeSetup claude, LocalClient local, Translation.SubtitleTranslator translator)
     {
-        _sites = new SiteClient[] { hiyori, hns, kamui, wosir };
+        _sites = new SiteClient[] { hiyori, hns, kamui, wosir, hannya };
         _library = library;
         _subtitles = subtitles;
         _sync = sync;
