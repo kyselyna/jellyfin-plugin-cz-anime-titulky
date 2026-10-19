@@ -110,7 +110,8 @@ public sealed class HiyoriResolver
         }
 
         var counted = await _aniList.GetSeasonAsync(first.Value, season, ct).ConfigureAwait(false);
-        if (ep.PremiereDate is not { } air || (counted is not null && (counted.Start is null || counted.Covers(air))))
+        // 1970-01-01 = missing date in the metadata, not an air date.
+        if (ep.PremiereDate is not { Year: > 1970 } air || (counted is not null && (counted.Start is null || counted.Covers(air))))
         {
             return (counted?.Id, episode);
         }
@@ -167,7 +168,8 @@ public sealed class HiyoriResolver
                 }
 
                 var page = await _hiyori.GetAnimeAsync(cand, ct).ConfigureAwait(false);
-                if (page.AniListId == aniId)
+                // Some hiyori pages link only MyAnimeList (Overgeared) → the MAL id counts when there is no AniList link.
+                if (page.AniListId == aniId || (page.AniListId is null && media.MalId is not null && page.MalId == media.MalId))
                 {
                     _map.Set(key, cand);
                     _logger.LogInformation("AniList {Id} ({Title}) = hiyori {Path}", aniId, media.Romaji, cand);

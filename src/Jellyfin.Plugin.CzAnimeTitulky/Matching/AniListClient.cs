@@ -12,6 +12,8 @@ public sealed class AniMedia
 {
     public int Id { get; set; }
 
+    public int? MalId { get; set; }
+
     public string? Format { get; set; }
 
     public int? Episodes { get; set; }
@@ -55,7 +57,7 @@ public sealed class AniMedia
 public sealed class AniListClient
 {
     private const string MediaQuery =
-        "query($id:Int){Media(id:$id,type:ANIME){id format episodes title{romaji english} synonyms startDate{year month day} endDate{year month day} relations{edges{relationType node{id format type}}}}}";
+        "query($id:Int){Media(id:$id,type:ANIME){id idMal format episodes title{romaji english} synonyms startDate{year month day} endDate{year month day} relations{edges{relationType node{id format type}}}}}";
 
     private const string SearchQuery =
         "query($s:String){Page(perPage:5){media(search:$s,type:ANIME){id}}}";
@@ -64,7 +66,7 @@ public sealed class AniListClient
     private readonly ILogger<AniListClient> _logger;
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly JsonCache<AniMedia> _media = new("anilist-media-v3");
+    private readonly JsonCache<AniMedia> _media = new("anilist-media-v4");
     private readonly JsonCache<int?> _search = new("anilist-search");
 
     public AniListClient(ILogger<AniListClient> logger)
@@ -89,6 +91,7 @@ public sealed class AniListClient
         var media = new AniMedia
         {
             Id = (int)m["id"]!,
+            MalId = (int?)m["idMal"],
             Format = (string?)m["format"],
             Episodes = (int?)m["episodes"],
             Romaji = (string?)m["title"]?["romaji"],

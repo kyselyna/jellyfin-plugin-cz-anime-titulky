@@ -16,7 +16,7 @@ public sealed record HiyoriRow(
     string? Url);
 
 /// <summary>A hiyori.cz anime page: its AniList id and the subtitle rows.</summary>
-public sealed record HiyoriAnime(string Path, int? AniListId, IReadOnlyList<HiyoriRow> Rows, DateTime Fetched);
+public sealed record HiyoriAnime(string Path, int? AniListId, IReadOnlyList<HiyoriRow> Rows, DateTime Fetched, int? MalId = null);
 
 /// <summary>
 /// hiyori.cz – the Czech/Slovak fansub aggregator. Provides the list of subtitles per anime
@@ -92,6 +92,7 @@ public sealed partial class HiyoriClient : SiteClient
         }
 
         var m = AniListLink().Match(html);
+        var mal = MalLink().Match(html);
         var rows = new List<HiyoriRow>();
         var panel = Parse(html).GetElementById("subs-panel");
         if (panel is not null)
@@ -109,7 +110,8 @@ public sealed partial class HiyoriClient : SiteClient
             }
         }
 
-        var anime = new HiyoriAnime(path, m.Success ? int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : null, rows, DateTime.UtcNow);
+        var anime = new HiyoriAnime(path, m.Success ? int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : null, rows, DateTime.UtcNow,
+            mal.Success ? int.Parse(mal.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : null);
         if (panel is not null || anime.AniListId is not null)
         {
             _pages[path] = anime; // a logged-out page (no table, no AniList link) is not cached
@@ -145,4 +147,7 @@ public sealed partial class HiyoriClient : SiteClient
 
     [GeneratedRegex(@"anilist\.co/anime/(\d+)")]
     private static partial Regex AniListLink();
+
+    [GeneratedRegex(@"myanimelist\.net/anime/(\d+)")]
+    private static partial Regex MalLink();
 }

@@ -1,5 +1,13 @@
 # Změny
 
+## 1.8.3 – 2026-10-19
+
+- **Párování s hiyori i přes MyAnimeList.** Některé stránky hiyori.cz odkazují jen na MyAnimeList, ne na AniList
+  (Overgeared / Tempal: Item no Chikara) – plugin je dřív nepoznal a hlásil „anime není na hiyori.cz“. Když
+  stránka nemá odkaz na AniList, uzná se podle MAL id, které AniList u anime uvádí.
+- Datum vysílání 1. 1. 1970 (chybějící údaj v metadatech) se bere jako neznámé – výběr sezóny podle data
+  z 1.8.2 by u takových dílů nenabídl nic.
+
 ## 1.8.2 – 2026-10-18
 
 - **Správná sezóna u rozdělených sérií.** AniList vede „Part 2“ jako samostatnou položku, takže N-tá položka
