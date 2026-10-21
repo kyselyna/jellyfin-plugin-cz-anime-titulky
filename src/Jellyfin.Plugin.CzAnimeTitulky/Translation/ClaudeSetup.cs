@@ -69,7 +69,8 @@ public sealed partial class ClaudeSetup
 
         lock (_lock)
         {
-            return new ClaudeStatus(path is not null, path, version, !string.IsNullOrWhiteSpace(Plugin.Instance?.Configuration.AiToken), _state, _url, _message);
+            // only a Claude token counts as signed in (the field may still hold an OpenAI/API key)
+            return new ClaudeStatus(path is not null, path, version, OAuthToken().IsMatch(Plugin.Instance?.Configuration.AiToken ?? string.Empty), _state, _url, _message);
         }
     }
 
@@ -248,6 +249,11 @@ public sealed partial class ClaudeSetup
                         var cfg = Plugin.Instance!.Configuration;
                         cfg.AiToken = t.Value;
                         cfg.AiBackend = "claude-cli";
+                        if (cfg.AiModel?.StartsWith("gpt", StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            cfg.AiModel = string.Empty;
+                        }
+
                         Plugin.Instance.SaveConfiguration();
                         (_state, _message, _url) = ("done", "Přihlášeno – token uložen do nastavení doplňku.", null);
                         ActivityLog.Write("AI        přihlášení ke Claude dokončeno (token uložen)");

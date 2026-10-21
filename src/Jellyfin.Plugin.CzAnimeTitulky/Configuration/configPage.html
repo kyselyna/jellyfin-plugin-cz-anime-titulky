@@ -271,7 +271,7 @@
                     claudeShow(st);
                     if (st.HasToken) {
                         el('ClaudeCode').value = '';
-                        ApiClient.getPluginConfiguration(pluginId).then(function (c) { el('AiToken').value = c.AiToken || ''; el('AiBackend').value = c.AiBackend; });
+                        ApiClient.getPluginConfiguration(pluginId).then(function (c) { el('AiToken').value = c.AiToken || ''; el('AiBackend').value = c.AiBackend; el('AiModel').value = c.AiModel || ''; });
                     }
                 }, claudePoll);
             });
