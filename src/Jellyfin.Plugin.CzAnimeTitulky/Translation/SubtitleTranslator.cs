@@ -215,6 +215,12 @@ public sealed partial class SubtitleTranslator
         {
             _logger.LogWarning(ex, "AI request failed");
             ActivityLog.Write("AI CHYBA  " + ex.Message);
+            if (UsageLimit().IsMatch(ex.Message))
+            {
+                // further requests would fail the same way – stop, the parts done so far are kept
+                throw new InvalidOperationException("AI: vyčerpaný limit (" + ex.Message + "), přeložené části jsou uložené, příště se naváže", ex);
+            }
+
             return null;
         }
 
@@ -277,6 +283,9 @@ public sealed partial class SubtitleTranslator
 
     [GeneratedRegex(@"\{[^}]*\}")]
     private static partial Regex AssTags();
+
+    [GeneratedRegex(@"usage limit|hit your limit|rate.?limit|\b429\b|quota|insufficient_quota", RegexOptions.IgnoreCase)]
+    private static partial Regex UsageLimit();
 
     /// <summary>Override tags at the start of a line (group 1) and the plain text after them (group 2).</summary>
     [GeneratedRegex(@"^((?:\{[^}]*\})*)([^{]*)$")]

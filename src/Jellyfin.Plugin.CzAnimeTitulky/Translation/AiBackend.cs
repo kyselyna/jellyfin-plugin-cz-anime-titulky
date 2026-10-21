@@ -344,7 +344,17 @@ public sealed class AiBackend
         {
             var err = (await errTask.ConfigureAwait(false)).Trim();
             _logger.LogWarning("{Exe} exit {Code}: {Err}", exe, p.ExitCode, err.Length > 500 ? err[..500] : err);
-            throw new InvalidOperationException($"{Path.GetFileName(exe)} failed ({p.ExitCode}): {(stdout.Length > 0 ? stdout[..Math.Min(300, stdout.Length)] : err[..Math.Min(300, err.Length)])}");
+            // claude -p --output-format json puts the reason (e.g. the usage limit) into "result"
+            string? reason = null;
+            try
+            {
+                reason = (string?)JsonNode.Parse(stdout)?["result"];
+            }
+            catch (System.Text.Json.JsonException)
+            {
+            }
+
+            throw new InvalidOperationException($"{Path.GetFileName(exe)} failed ({p.ExitCode}): {(!string.IsNullOrWhiteSpace(reason) ? reason : stdout.Length > 0 ? stdout[..Math.Min(300, stdout.Length)] : err[..Math.Min(300, err.Length)])}");
         }
 
         return stdout;
