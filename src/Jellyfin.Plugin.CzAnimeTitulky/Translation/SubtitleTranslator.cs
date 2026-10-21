@@ -81,9 +81,14 @@ public sealed partial class SubtitleTranslator
         await OneAtATime.WaitAsync(ct).ConfigureAwait(false); // never two translations (and bills) at once
         try
         {
+            // only the text after leading override tags is translated, so lines that differ just in the tags
+            // (karaoke/typesetting animated frame by frame: a 90 s opening = 2900 lines) are asked for once
             var items = doc.Events
                 .Where(e => Translatable(doc.GetText(e)))
-                .Select(e => (Event: e, Text: doc.GetText(e)))
+                .Select(e => (Event: e, Raw: doc.GetText(e)))
+                .Select(x => LeadingTags().Match(x.Raw) is { Success: true } m && m.Groups[2].Length > 0
+                    ? (x.Event, Tags: m.Groups[1].Value, Text: m.Groups[2].Value)
+                    : (x.Event, Tags: string.Empty, Text: x.Raw))
                 .ToList();
             var done = new List<(string Src, string Cs)>();
             var chunk = Math.Clamp(Plugin.Instance?.Configuration.AiChunkLines ?? 150, 20, 2000);
@@ -91,15 +96,22 @@ public sealed partial class SubtitleTranslator
             {
                 chunk = Math.Min(chunk, 100); // local models: small context window, and smaller answers break less
             }
-            for (var start = 0; start < items.Count; start += chunk)
+            var unique = items.Select(i => i.Text).Distinct(StringComparer.Ordinal).ToList();
+            var cs = new Dictionary<string, string>(StringComparer.Ordinal);
+            for (var start = 0; start < unique.Count; start += chunk)
             {
-                var part = items.Skip(start).Take(chunk).ToList();
-                var result = await TranslateRobustAsync(part.Select(p => p.Text).ToList(), done, title, sourceLanguage, ct).ConfigureAwait(false);
+                var part = unique.Skip(start).Take(chunk).ToList();
+                var result = await TranslateRobustAsync(part, done, title, sourceLanguage, ct).ConfigureAwait(false);
                 for (var i = 0; i < part.Count; i++)
                 {
-                    doc.SetText(part[i].Event, result[i]);
-                    done.Add((part[i].Text, result[i]));
+                    cs[part[i]] = result[i];
+                    done.Add((part[i], result[i]));
                 }
+            }
+
+            foreach (var (e, tags, text) in items)
+            {
+                doc.SetText(e, tags + cs[text]);
             }
         }
         finally
@@ -265,6 +277,10 @@ public sealed partial class SubtitleTranslator
 
     [GeneratedRegex(@"\{[^}]*\}")]
     private static partial Regex AssTags();
+
+    /// <summary>Override tags at the start of a line (group 1) and the plain text after them (group 2).</summary>
+    [GeneratedRegex(@"^((?:\{[^}]*\})*)([^{]*)$")]
+    private static partial Regex LeadingTags();
 
     [GeneratedRegex(@"\{\s*""i""\s*:\s*(\d+)\s*,\s*""t""\s*:\s*""((?:[^""\\]|\\.)*)""\s*\}")]
     private static partial Regex JsonObject();
