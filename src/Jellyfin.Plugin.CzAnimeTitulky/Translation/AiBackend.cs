@@ -97,7 +97,10 @@ public sealed class AiBackend
         {
             "-p", "--output-format", "json",
             "--model", Model(),
-            "--append-system-prompt", system,
+            // our prompt replaces Claude Code's own long system prompt (sent with every request = usage limit),
+            // and a translation needs no extended thinking
+            "--system-prompt", system,
+            "--effort", "low",
             "--tools", string.Empty,
             "--strict-mcp-config",
             "--setting-sources", string.Empty,
