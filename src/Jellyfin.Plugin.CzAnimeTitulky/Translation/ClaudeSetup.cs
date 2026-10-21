@@ -174,7 +174,11 @@ public sealed partial class ClaudeSetup
             return await StatusAsync(ct).ConfigureAwait(false);
         }
 
-        await p.StandardInput.WriteAsync((code.Trim() + "\r").AsMemory(), ct).ConfigureAwait(false);
+        // a long code arriving in one chunk is taken as a paste, and an Enter inside it is swallowed → send Enter separately
+        await p.StandardInput.WriteAsync(code.Trim().AsMemory(), ct).ConfigureAwait(false);
+        await p.StandardInput.FlushAsync(ct).ConfigureAwait(false);
+        await Task.Delay(700, ct).ConfigureAwait(false);
+        await p.StandardInput.WriteAsync("\r".AsMemory(), ct).ConfigureAwait(false);
         await p.StandardInput.FlushAsync(ct).ConfigureAwait(false);
         lock (_lock)
         {
