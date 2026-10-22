@@ -319,6 +319,12 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
             return Array.Empty<RemoteSubtitleInfo>();
         }
 
+        // automatically not for short extras (openings/endings without dialogue, only song lyrics); manually yes
+        if (automated && video.RunTimeTicks is { } ticks && TimeSpan.FromTicks(ticks) < TimeSpan.FromMinutes(5))
+        {
+            return Array.Empty<RemoteSubtitleInfo>();
+        }
+
         var streams = video.GetMediaStreams()
             .Where(m => m.Type == MediaBrowser.Model.Entities.MediaStreamType.Subtitle && !m.IsExternal && m.IsTextSubtitleStream)
             .Where(m => (m.Language ?? string.Empty).ToLowerInvariant() is not ("cze" or "ces" or "slo" or "slk"))
