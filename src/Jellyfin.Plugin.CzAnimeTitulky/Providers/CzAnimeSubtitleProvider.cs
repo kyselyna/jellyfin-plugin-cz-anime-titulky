@@ -704,7 +704,7 @@ public sealed partial class CzAnimeSubtitleProvider : ISubtitleProvider
     private async Task<Payload?> DownloadAsync(Candidate c, string? videoPath, CancellationToken ct) => c.K switch
     {
         "hiyori" => await _hiyori.DownloadAsync(c.U, ct).ConfigureAwait(false),
-        "hns" => await _hns.DownloadAsync(c.U, c.E, ct).ConfigureAwait(false),
+        "hns" => await _hns.DownloadAsync(c.U, c.E, (await _aniList.GetAsync(c.A, ct).ConfigureAwait(false))?.Titles() ?? Array.Empty<string>(), ct).ConfigureAwait(false),
         "kamui" => await _kamui.DownloadAsync(c.U, c.E, ct).ConfigureAwait(false),
         "wosir" => await _wosir.DownloadAsync(c.U, c.E, BdRelease().IsMatch(videoPath ?? string.Empty), ct).ConfigureAwait(false),
         "direct" => await _direct.DownloadAsync(c.U, ct).ConfigureAwait(false),

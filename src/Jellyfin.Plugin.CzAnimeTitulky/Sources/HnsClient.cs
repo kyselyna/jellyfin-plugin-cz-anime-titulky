@@ -12,6 +12,7 @@ public sealed partial class HnsClient : SiteClient
 {
     private const string Base = "https://hns.sk";
     private readonly Util.JsonCache<Dictionary<int, string>> _episodes = new("hns-episodes");
+    private readonly Util.JsonCache<Dictionary<string, string>> _list = new("hns-animelist");
 
     public HnsClient(ILogger<HnsClient> logger)
         : base(logger)
@@ -55,7 +56,7 @@ public sealed partial class HnsClient : SiteClient
             && (resp.Contains("logout", StringComparison.OrdinalIgnoreCase) || resp.Contains("odhlás", StringComparison.OrdinalIgnoreCase));
     }
 
-    public async Task<Payload?> DownloadAsync(string url, int episode, CancellationToken ct)
+    public async Task<Payload?> DownloadAsync(string url, int episode, IEnumerable<string> titles, CancellationToken ct)
     {
         await EnsureLoginAsync(ct).ConfigureAwait(false);
         // hiyori links www.hns.sk, but the login cookie belongs to hns.sk
@@ -65,7 +66,24 @@ public sealed partial class HnsClient : SiteClient
             return null;
         }
 
-        string? epUrl = url.Contains("/episode/", StringComparison.Ordinal) ? url : (await EpisodesAsync(url, ct).ConfigureAwait(false)).GetValueOrDefault(episode);
+        string? epUrl = null;
+        if (url.Contains("/episode/", StringComparison.Ordinal))
+        {
+            epUrl = url;
+        }
+        else
+        {
+            var episodes = await EpisodesAsync(url, ct).ConfigureAwait(false);
+            // hns renames anime pages (DanMachi II: hiyori still links the old slug, which redirects to the home page)
+            // → find the anime in the A–Z list by its title.
+            if (episodes.Count == 0 && await FindByTitleAsync(titles, ct).ConfigureAwait(false) is { } moved && moved != url)
+            {
+                Logger.LogInformation("hns.sk: {Old} moved to {New}", url, moved);
+                episodes = await EpisodesAsync(moved, ct).ConfigureAwait(false);
+            }
+
+            epUrl = episodes.GetValueOrDefault(episode);
+        }
         if (epUrl is null)
         {
             return null;
@@ -134,6 +152,39 @@ public sealed partial class HnsClient : SiteClient
         _episodes.Set(animeUrl, map);
         return map;
     }
+
+    /// <summary>Anime page URL from the A–Z list (/animelist) whose name equals one of the titles.</summary>
+    private async Task<string?> FindByTitleAsync(IEnumerable<string> titles, CancellationToken ct)
+    {
+        var wanted = titles.Select(Normalize).Where(t => t.Length > 0).ToHashSet();
+        if (wanted.Count == 0)
+        {
+            return null;
+        }
+
+        if (!_list.TryGet("animelist", TimeSpan.FromDays(1), out var list) || list is not { Count: > 0 })
+        {
+            var (html, _) = await GetHtmlAsync(Base + "/animelist", ct).ConfigureAwait(false);
+            list = new Dictionary<string, string>();
+            foreach (var a in Parse(html).QuerySelectorAll("a[href]"))
+            {
+                var href = a.GetAttribute("href")!;
+                if (AnimePage().IsMatch(href))
+                {
+                    list.TryAdd(Normalize(a.TextContent), Base + href);
+                }
+            }
+
+            _list.Set("animelist", list);
+        }
+
+        return list.Where(kv => wanted.Contains(kv.Key)).Select(kv => kv.Value).FirstOrDefault();
+    }
+
+    private static string Normalize(string s) => Regex.Replace(s.ToLowerInvariant(), @"[^\p{L}\p{N}]+", string.Empty);
+
+    [GeneratedRegex(@"^/anime/(?!episode/)[^/]+$")]
+    private static partial Regex AnimePage();
 
     [GeneratedRegex(@" - (\d+)\s*Zpět na anime")]
     private static partial Regex EpisodeNumber();

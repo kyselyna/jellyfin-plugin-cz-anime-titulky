@@ -43,7 +43,9 @@ public sealed class HiyoriResolver
             return null;
         }
 
-        var anime = await FindHiyoriAsync(ids.Value.AniListId, fresh, ct).ConfigureAwait(false);
+        // hiyori page numbers are often the AniDB ids (DanMachi S1 = /anime/10894) → a cheap first guess.
+        var aniDb = video is Episode e ? e.Season?.GetProviderId("AniDB") : video.GetProviderId("AniDB");
+        var anime = await FindHiyoriAsync(ids.Value.AniListId, aniDb, fresh, ct).ConfigureAwait(false);
         return anime is null ? null : new Target(video, ids.Value.Name, ids.Value.Episode, anime, ids.Value.AniListId);
     }
 
@@ -109,18 +111,34 @@ public sealed class HiyoriResolver
             return (null, episode);
         }
 
-        var counted = await _aniList.GetSeasonAsync(first.Value, season, ct).ConfigureAwait(false);
+        var chain = await _aniList.GetChainAsync(first.Value, ct).ConfigureAwait(false);
+        var counted = season - 1 < chain.Count ? chain[season - 1] : null;
+        var byCount = ByEpisodeCount(chain, series!, season, episode);
         // 1970-01-01 = missing date in the metadata, not an air date.
-        if (ep.PremiereDate is not { Year: > 1970 } air || (counted is not null && (counted.Start is null || counted.Covers(air))))
+        var air = ep.PremiereDate is { Year: > 1970 } d ? d : (DateTime?)null;
+        if (byCount is { } bc && (air is null || chain[bc.Index].Start is null || chain[bc.Index].Covers(air.Value)))
+        {
+            return (chain[bc.Index].Id, bc.Episode);
+        }
+
+        if (air is null || (counted is not null && (counted.Start is null || counted.Covers(air.Value))))
         {
             return (counted?.Id, episode);
         }
 
         // N-th season of the chain aired at another time (e.g. Mushoku Tensei: S1 and S2 have a "Part 2" each,
         // so the 3rd chain entry is season 2) → take the entry that aired when the episode did.
-        var byDate = (await _aniList.GetChainAsync(first.Value, ct).ConfigureAwait(false)).FirstOrDefault(m => m.Covers(air));
+        // Parts only push a season later in the chain, never earlier.
+        var byDate = chain.Skip(season - 1).FirstOrDefault(m => m.Covers(air.Value));
         if (byDate is null)
         {
+            if (byCount is { } fallback)
+            {
+                // The date is wrong (DanMachi IV: most episodes dated like season 1) – the episode counts decide.
+                _logger.LogInformation("{Series} S{Season:00}E{Episode:00}: air date {Air:yyyy-MM-dd} fits no entry, by episode count AniList {Id} episode {Number}", ep.SeriesName, season, episode, air, chain[fallback.Index].Id, fallback.Episode);
+                return (chain[fallback.Index].Id, fallback.Episode);
+            }
+
             _logger.LogInformation("{Series} S{Season:00}E{Episode:00}: no AniList entry aired on {Air:yyyy-MM-dd}", ep.SeriesName, season, episode, air);
             return (null, episode); // better nothing than another season's subtitles
         }
@@ -137,7 +155,58 @@ public sealed class HiyoriResolver
         return (byDate.Id, episode - before);
     }
 
-    private async Task<HiyoriAnime?> FindHiyoriAsync(int aniId, bool fresh, CancellationToken ct)
+    /// <summary>
+    /// Chain entry and episode number from the episode counts: a Jellyfin season spans several AniList entries
+    /// when its highest episode number clearly exceeds the entry ("Part 2" entries). Independent of air dates.
+    /// </summary>
+    private (int Index, int Episode)? ByEpisodeCount(List<AniMedia> chain, Series series, int season, int episode)
+    {
+        var last = _library.GetItemList(new InternalItemsQuery
+        {
+            IncludeItemTypes = new[] { BaseItemKind.Episode },
+            AncestorIds = new[] { series.Id },
+            Recursive = true,
+        }).OfType<Episode>()
+            .Where(e => e.ParentIndexNumber is > 0 && e.IndexNumber is > 0)
+            .GroupBy(e => e.ParentIndexNumber!.Value)
+            .ToDictionary(g => g.Key, g => g.Max(e => e.IndexNumber!.Value));
+        var idx = 0;
+        for (var s = 1; s <= season; s++)
+        {
+            if (idx >= chain.Count || chain[idx].Episodes is not int sum)
+            {
+                return null;
+            }
+
+            var startIdx = idx;
+            var max = last.GetValueOrDefault(s);
+            // one extra episode (a recap) is no reason to take the next entry
+            while (max >= sum + 2 && idx + 1 < chain.Count && chain[idx + 1].Episodes is int next)
+            {
+                idx++;
+                sum += next;
+            }
+
+            if (s == season)
+            {
+                var i = startIdx;
+                var e = episode;
+                while (i < idx && e > chain[i].Episodes!.Value)
+                {
+                    e -= chain[i].Episodes!.Value;
+                    i++;
+                }
+
+                return (i, e);
+            }
+
+            idx++;
+        }
+
+        return null;
+    }
+
+    private async Task<HiyoriAnime?> FindHiyoriAsync(int aniId, string? aniDb, bool fresh, CancellationToken ct)
     {
         var key = aniId.ToString(System.Globalization.CultureInfo.InvariantCulture);
         if (_map.TryGet(key, TimeSpan.FromDays(3650), out var path) && path is not null)
@@ -158,9 +227,12 @@ public sealed class HiyoriResolver
         }
 
         var tried = new HashSet<string>();
-        foreach (var title in media.Titles())
+        var guess = ParseId(aniDb) is int a ? new[] { $"/anime/{a}" } : Array.Empty<string>();
+        foreach (var title in new string?[] { null }.Concat(media.Titles()))
         {
-            foreach (var cand in (await _hiyori.SearchAsync(title, ct).ConfigureAwait(false)).Take(10))
+            // Popular titles return many seasons and films (DanMachi: 13 results, season 1 the last one).
+            var found = title is null ? guess : (await _hiyori.SearchAsync(title, ct).ConfigureAwait(false)).Take(20);
+            foreach (var cand in found)
             {
                 if (!tried.Add(cand))
                 {

@@ -1,5 +1,26 @@
 # Změny
 
+## 1.8.11 – 2026-10-26
+
+- **Výběr sezóny podle počtu dílů.** Když má řada v Jellyfinu víc dílů, než má záznam na AniListu, patří zbytek
+  do dalšího záznamu („Part 2“). Neplatí to o jednom dílu navíc, třeba rekapitulaci. Data vysílání z metadat
+  se použijí jen tehdy, když sedí. DanMachi IV má v metadatech u většiny dílů datum 1. řady (2015), plugin je
+  proto hledal u 1. řady. U DanMachi V dva takové díly posunuly číslování (S05E12 → „díl 10“). Sezóna se teď
+  ani podle data nemůže přiřadit dřívějšímu záznamu, než jaký odpovídá jejímu číslu.
+- **hiyori.cz: víc výsledků hledání a odhad podle AniDB.** U populárních titulů vrátí hledání spoustu sezón a
+  filmů. DanMachi má 13 výsledků a 1. řada je poslední, plugin přitom bral jen prvních 10. Teď bere 20. Navíc
+  nejdřív zkusí stránku s číslem AniDB id sezóny, protože hiyori je většinou používá.
+- **hns.sk: přejmenované stránky anime.** hiyori u DanMachi II odkazuje na starou adresu, ze které hns.sk
+  přesměruje na úvodní stránku. Když stránka anime nemá žádné díly, plugin anime najde v seznamu /animelist
+  podle názvu z AniListu.
+
+## 1.8.10 – 2026-10-26
+
+- **Hledání na hiyori.cz po vypršení přihlášení.** Hiyori nepřihlášenému uživateli při hledání nic nevrátí a
+  přihlášení po několika dnech běhu serveru vyprší. Plugin pak u nových anime hlásil „anime není na hiyori.cz“
+  (Journal with Witch / Ikoku Nikki), i když tam titulky jsou. Když stránka s výsledky ukazuje odhlášeného
+  uživatele, plugin se znovu přihlásí a hledá ještě jednou.
+
 ## 1.8.4 – 2026-10-19
 
 - **Nový web HannyaSubs – [hannya-subs.cz](https://www.hannya-subs.cz).** HannyaSubs nově vydávají na vlastním webu
