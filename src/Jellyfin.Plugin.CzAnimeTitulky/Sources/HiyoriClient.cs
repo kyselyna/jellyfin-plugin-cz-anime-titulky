@@ -62,7 +62,14 @@ public sealed partial class HiyoriClient : SiteClient
     {
         await EnsureLoginAsync(ct).ConfigureAwait(false);
         var q = title.Length > 60 ? title[..60] : title;
-        var (html, _) = await PostFormAsync(Base + "/rozcestnik", new Dictionary<string, string> { ["nazev"] = q }, ct).ConfigureAwait(false);
+        var form = new Dictionary<string, string> { ["nazev"] = q };
+        var (html, _) = await PostFormAsync(Base + "/rozcestnik", form, ct).ConfigureAwait(false);
+        // A logged-out search finds nothing, and the session expires after a few days of uptime.
+        if (!IsLoggedIn(html) && await EnsureLoginAsync(ct, force: true).ConfigureAwait(false))
+        {
+            (html, _) = await PostFormAsync(Base + "/rozcestnik", form, ct).ConfigureAwait(false);
+        }
+
         return Parse(html).QuerySelectorAll("a[href]")
             .Select(a => a.GetAttribute("href")!)
             .Where(h => AnimePath().IsMatch(h))
